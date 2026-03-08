@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <h3 className="text-lg font-bold mb-4">AzeroTech</h3>
+            <h3 className="text-lg font-bold mb-4">ASKJADNSs</h3>
             <p className="text-gray-400 text-sm">
               Professional phone and laptop repair services with modern,
               affordable accessories.
