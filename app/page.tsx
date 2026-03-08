@@ -324,7 +324,7 @@ export default function Home() {
       <section className="py-16 md:py-24" style={{ background: "#F7F8FF" }}>
         <div className="flex flex-col max-w-6xl mx-auto px-6 sm:px-10 lg:px-12">
           {/* Section Header */}
-          <motion.div {...fadeUpView()} className="flex flex-col items-center text-center mb-20">
+          <motion.div {...fadeUpView()} className="flex flex-col items-center text-center mb-10">
             <span
               className="inline-block text-sm mb-5 uppercase tracking-widest"
               style={{ color: "#4F6EF7", fontWeight: 600 }}
@@ -361,9 +361,9 @@ export default function Home() {
                         Open
                       </span>
                     </div>
-                    <p className="text-slate-500 text-sm">9WCC+FG Imus, Cavite</p>
+                    <p className="text-slate-500 text-sm">B39 L2 PH2 Greengate Homes Malagasang 2-B, Imus, Cavite, 4105</p>
                     <a
-                      href="https://maps.google.com/?q=9WCC+FG+Imus+Cavite"
+                      href="https://www.google.com/maps/place/Azerotech+Gadget+fix+%26+Printing+Services/@14.3712506,120.9221804,928m/data=!3m1!1e3!4m6!3m5!1s0x3397d3e8468e7917:0x6e2d9fc810571320!8m2!3d14.3712454!4d120.9213543!16s%2Fg%2F11j53q_t9x?entry=ttu&g_ep=EgoyMDI2MDMwNC4xIKXMDSoASAFQAw%3D%3D"
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 text-sm mt-2 hover:underline"
@@ -426,7 +426,7 @@ export default function Home() {
             >
               <iframe
                 title="AzeroTech Location – Imus, Cavite"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3864.5528615367586!2d120.9388385!3d14.4262198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d2ba9ebef455%3A0x6e8a0028eeb3dc89!2sImus%2C%20Cavite!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d600.7140514889592!2d120.92151418587893!3d14.37123738378802!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d3e8468e7917%3A0x6e2d9fc810571320!2sAzerotech%20Gadget%20fix%20%26%20Printing%20Services!5e1!3m2!1sen!2sph!4v1772956050218!5m2!1sen!2sph"
                 width="100%"
                 height="100%"
                 style={{ border: 0, display: "block", minHeight: "480px" }}
