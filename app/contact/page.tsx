@@ -1,281 +1,363 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
+import {
+  ArrowRight,
+  Phone,
+  MessageCircle,
+  MapPin,
+} from "lucide-react";
+
+function InstagramIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={style}
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
+const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, delay, ease },
+});
+
+const fadeUpView = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true },
+  transition: { duration: 0.55, delay, ease },
+});
+
+const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
+const hours = [
+  { day: "Monday",    time: "9:00 AM – 6:00 PM" },
+  { day: "Tuesday",   time: "9:00 AM – 6:00 PM" },
+  { day: "Wednesday", time: "9:00 AM – 6:00 PM" },
+  { day: "Thursday",  time: "9:00 AM – 6:00 PM" },
+  { day: "Friday",    time: "9:00 AM – 6:00 PM" },
+  { day: "Saturday",  time: "10:00 AM – 5:00 PM" },
+  { day: "Sunday",    time: "10:00 AM – 5:00 PM" },
+];
+
+const contactMethods = [
+  {
+    Icon: Phone,
+    label: "Call Us",
+    detail: "+63 912 345 6789",
+    sub: "Available during store hours",
+    href: "tel:+639123456789",
+    accentBg: "#EEF1FF",
+    accentColor: "#4F6EF7",
+    actionLabel: "Call Now",
+  },
+  {
+    Icon: MessageCircle,
+    label: "Messenger",
+    detail: "AzeroTech",
+    sub: "Chat with us anytime",
+    href: "https://m.me/azerotech",
+    accentBg: "#E0F2FE",
+    accentColor: "#0084FF",
+    actionLabel: "Message Now",
+  },
+  {
+    Icon: MapPin,
+    label: "Visit Us",
+    detail: "Imus, Cavite",
+    sub: "B39 L2 PH2 Greengate Homes",
+    href: "https://www.google.com/maps/place/Azerotech+Gadget+fix+%26+Printing+Services/@14.3712506,120.9221804,928m/data=!3m1!1e3!4m6!3m5!1s0x3397d3e8468e7917:0x6e2d9fc810571320!8m2!3d14.3712454!4d120.9213543!16s%2Fg%2F11j53q_t9x",
+    accentBg: "#DCFCE7",
+    accentColor: "#16A34A",
+    actionLabel: "Get Directions",
+  },
+  {
+    Icon: InstagramIcon,
+    label: "Instagram",
+    detail: "@azerotech",
+    sub: "Follow us for updates",
+    href: "https://instagram.com/azerotech",
+    accentBg: "#FDF2F8",
+    accentColor: "#C026D3",
+    actionLabel: "Follow Us",
+  },
+];
 
 export default function Contact() {
-  const today = new Date();
-  const dayOfWeek = today.toLocaleDateString("en-US", { weekday: "long" });
-
-  const hours = [
-    { day: "Monday", time: "9:00 AM - 6:00 PM" },
-    { day: "Tuesday", time: "9:00 AM - 6:00 PM" },
-    { day: "Wednesday", time: "9:00 AM - 6:00 PM" },
-    { day: "Thursday", time: "9:00 AM - 6:00 PM" },
-    { day: "Friday", time: "9:00 AM - 6:00 PM" },
-    { day: "Saturday", time: "10:00 AM - 5:00 PM" },
-    { day: "Sunday", time: "10:00 AM - 5:00 PM" },
-  ];
-
-  const isToday = (day: string) => day === dayOfWeek;
-
-  const contactMethods = [
-    {
-      icon: "📞",
-      title: "Call Us",
-      description: "Available during store hours",
-      contact: "+63 912 345 6789",
-      link: "tel:+639123456789",
-    },
-    {
-      icon: "💬",
-      title: "Messenger",
-      description: "Chat with us anytime",
-      contact: "AzeroTech",
-      link: "https://m.me/azerotech",
-    },
-    {
-      icon: "📍",
-      title: "Visit Us",
-      description: "Main location in Imus, Cavite",
-      contact: "9WCC+FG Imus, Cavite",
-      link: "https://maps.google.com/?q=imus+cavite",
-    },
-  ];
-
   return (
-    <>
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-40 pb-28 md:pb-36">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Get in <span className="text-indigo-300">Touch</span>
-          </h1>
-          <p className="text-xl text-gray-300 leading-relaxed">
-            We are here to help with all your device needs
-          </p>
+    <div className="flex flex-col">
+
+      {/* ─── HERO ─── */}
+      <section
+        className="relative overflow-hidden flex flex-col justify-center"
+        style={{
+          background: "linear-gradient(135deg, #080B1A 0%, #0F1535 60%, #080B1A 100%)",
+          minHeight: "60vh",
+        }}
+      >
+        {/* Grid decoration */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        {/* Glow orbs */}
+        <div
+          className="absolute -top-32 -left-32 w-150 h-150 rounded-full opacity-10 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #4F6EF7, transparent 70%)" }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-100 h-100 rounded-full pointer-events-none"
+          style={{ opacity: 0.08, background: "radial-gradient(circle, #06B6D4, transparent 70%)" }}
+        />
+
+        <div className="relative flex flex-col items-center justify-center text-center px-6 sm:px-10 lg:px-16 py-28 pb-40 max-w-4xl mx-auto w-full">
+          {/* Badge */}
+          <motion.div {...fadeUp(0)} className="mb-10">
+            <span
+              className="inline-flex items-center gap-2 border rounded-full px-5 py-2.5 text-sm"
+              style={{
+                background: "rgba(79,110,247,0.15)",
+                borderColor: "rgba(79,110,247,0.3)",
+                color: "#8B9EFF",
+                fontWeight: 500,
+              }}
+            >
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              Imus, Cavite · Open 7 Days a Week
+            </span>
+          </motion.div>
+
+          <motion.h1
+            {...fadeUp(0.08)}
+            className="text-white mb-6 max-w-2xl w-full"
+            style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: 700, lineHeight: 1.1 }}
+          >
+            Get in{" "}
+            <span
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #06B6D4)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Touch
+            </span>
+          </motion.h1>
+
+          <motion.p
+            {...fadeUp(0.16)}
+            className="text-slate-400 max-w-xl w-full leading-relaxed"
+            style={{ fontSize: "clamp(1rem, 2.5vw, 1.15rem)" }}
+          >
+            We&apos;re here to help — reach out any way that&apos;s convenient for you.
+          </motion.p>
+        </div>
+
+        {/* Bottom wave */}
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none">
+          <svg
+            viewBox="0 0 1440 64"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="none"
+            className="w-full h-16"
+          >
+            <path d="M0 64L1440 64L1440 32C1200 0 240 64 0 32L0 64Z" fill="#F7F8FF" />
+          </svg>
         </div>
       </section>
 
-      {/* Contact Methods */}
-      <section className="py-24 md:py-32 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {contactMethods.map((method, idx) => (
-              <a
-                key={idx}
-                href={method.link}
-                target={method.link.startsWith("http") ? "_blank" : undefined}
-                rel={
-                  method.link.startsWith("http")
-                    ? "noopener noreferrer"
-                    : undefined
-                }
-                className="group bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl border border-gray-200 hover:border-indigo-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center"
-              >
-                <div className="text-6xl mb-4">{method.icon}</div>
-                <h3 className="text-2xl font-bold text-navy-dark mb-2">
-                  {method.title}
-                </h3>
-                <p className="text-gray-600 mb-4">{method.description}</p>
-                <p className="text-lg font-semibold text-indigo-600">
-                  {method.contact}
-                </p>
-                <div className="mt-4 text-indigo-600 font-semibold flex items-center justify-center gap-2">
-                  {method.title === "Call Us" && "Call Now →"}
-                  {method.title === "Messenger" && "Message Now →"}
-                  {method.title === "Visit Us" && "Get Directions →"}
-                </div>
-              </a>
-            ))}
+      {/* ─── CONTACT + MAP ─── */}
+      <section className="py-16 md:py-24" style={{ background: "#F7F8FF" }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+          <div className="flex flex-col lg:flex-row items-stretch gap-10">
+
+            {/* Contact Cards */}
+            <div className="flex flex-col gap-5 w-full lg:w-2/5">
+              {contactMethods.map((method, idx) => (
+                <motion.a
+                  key={method.label}
+                  {...fadeUpView(idx * 0.07)}
+                  href={method.href}
+                  target={method.href.startsWith("http") ? "_blank" : undefined}
+                  rel={method.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                  className="flex items-center gap-5 bg-white rounded-2xl px-6 py-5 border border-slate-100 hover:border-transparent hover:shadow-lg transition-all duration-300 group"
+                  style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
+                    style={{ background: method.accentBg }}
+                  >
+                    <method.Icon className="w-5 h-5" style={{ color: method.accentColor }} />
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <p className="text-[#0F172A] font-semibold text-sm">{method.label}</p>
+                    <p className="text-[#0F172A] font-bold text-base truncate">{method.detail}</p>
+                    <p className="text-slate-400 text-xs">{method.sub}</p>
+                  </div>
+                  <span
+                    className="inline-flex items-center gap-1 text-sm font-semibold shrink-0 transition-all group-hover:gap-2"
+                    style={{ color: method.accentColor }}
+                  >
+                    {method.actionLabel} <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                  </span>
+                </motion.a>
+              ))}
+            </div>
+
+            {/* Map */}
+            <motion.div
+              {...fadeUpView(0.1)}
+              className="flex flex-col flex-1 bg-white rounded-2xl overflow-hidden border border-slate-100"
+              style={{ minHeight: "480px", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}
+            >
+              <iframe
+                title="AzeroTech Location – Imus, Cavite"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d600.7140514889592!2d120.92151418587893!3d14.37123738378802!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d3e8468e7917%3A0x6e2d9fc810571320!2sAzerotech%20Gadget%20fix%20%26%20Printing%20Services!5e1!3m2!1sen!2sph!4v1772956050218!5m2!1sen!2sph"
+                width="100%"
+                height="100%"
+                style={{ border: 0, display: "block", minHeight: "480px" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </motion.div>
+
           </div>
         </div>
       </section>
 
-      {/* Store Hours */}
-      <section className="bg-gray-50 py-24 md:py-32">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">
-            Store <span className="text-indigo-600">Hours</span>
-          </h2>
-          <p className="text-center text-gray-600 mb-12 text-lg leading-relaxed">
-            Plan your visit or reach out during these times
-          </p>
+      {/* ─── STORE HOURS ─── */}
+      <section className="py-16 md:py-24" style={{ background: "#080B1A" }}>
+        <div className="max-w-3xl mx-auto px-6 sm:px-10 lg:px-12">
+          <motion.div {...fadeUpView()} className="flex flex-col items-center text-center mb-12">
+            <span
+              className="inline-block text-sm mb-5 uppercase tracking-widest"
+              style={{ color: "#8B9EFF", fontWeight: 600 }}
+            >
+              Store Hours
+            </span>
+            <h2 className="text-white" style={{ fontWeight: 700 }}>
+              When to Visit
+            </h2>
+          </motion.div>
 
-          <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-navy-dark to-indigo-900 text-white">
-                  <tr>
-                    <th className="px-6 py-4 text-left font-bold">Day</th>
-                    <th className="px-6 py-4 text-left font-bold">Hours</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {hours.map((hour, idx) => (
-                    <tr
-                      key={idx}
-                      className={`border-t border-gray-200 ${
-                        isToday(hour.day)
-                          ? "bg-indigo-50 font-bold"
-                          : idx % 2 === 0
-                            ? "bg-white"
-                            : "bg-gray-50"
-                      }`}
+          <motion.div
+            {...fadeUpView(0.08)}
+            className="rounded-2xl overflow-hidden"
+            style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            {hours.map((h, idx) => {
+              const isToday = h.day === today;
+              return (
+                <div
+                  key={h.day}
+                  className="flex items-center justify-between px-7 py-4"
+                  style={{
+                    background: isToday
+                      ? "rgba(79,110,247,0.18)"
+                      : idx % 2 === 0
+                      ? "rgba(255,255,255,0.03)"
+                      : "rgba(255,255,255,0.06)",
+                    borderBottom: idx < hours.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="font-semibold"
+                      style={{ color: isToday ? "#8B9EFF" : "#CBD5E1" }}
                     >
-                      <td className="px-6 py-4 text-navy-dark font-semibold">
-                        {hour.day}
-                        {isToday(hour.day) && (
-                          <span className="ml-2 inline-block px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full">
-                            Today
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-navy-dark">
-                        {hour.time}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <p className="text-center text-gray-600 mt-6">
-            Extended hours on holidays available upon request. Call us to confirm!
-          </p>
+                      {h.day}
+                    </span>
+                    {isToday && (
+                      <span
+                        className="text-xs px-2.5 py-0.5 rounded-full font-bold"
+                        style={{ background: "#4F6EF7", color: "white" }}
+                      >
+                        Today
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: isToday ? "#A5B4FC" : "#64748B" }}
+                  >
+                    {h.time}
+                  </span>
+                </div>
+              );
+            })}
+          </motion.div>
         </div>
       </section>
 
-      {/* Information Sections */}
-      <section className="py-24 md:py-32 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-            {/* FAQ */}
-            <div>
-              <h3 className="text-2xl font-bold text-navy-dark mb-6">
-                Frequently Asked Questions
-              </h3>
-              <div className="space-y-4">
-                <details className="bg-gray-50 p-4 rounded-lg group">
-                  <summary className="font-semibold text-navy-dark cursor-pointer hover:text-indigo-600">
-                    How long does a typical repair take?
-                  </summary>
-                  <p className="text-gray-600 mt-3">
-                    Most repairs take 1-3 hours depending on the issue. We will
-                    give you an estimate when you bring in your device.
-                  </p>
-                </details>
-
-                <details className="bg-gray-50 p-4 rounded-lg">
-                  <summary className="font-semibold text-navy-dark cursor-pointer hover:text-indigo-600">
-                    Do you offer warranty?
-                  </summary>
-                  <p className="text-gray-600 mt-3">
-                    Yes! All repairs come with a 30-day warranty. If the same
-                    issue occurs, we will fix it for free.
-                  </p>
-                </details>
-
-                <details className="bg-gray-50 p-4 rounded-lg">
-                  <summary className="font-semibold text-navy-dark cursor-pointer hover:text-indigo-600">
-                    Can I drop off my device and come back later?
-                  </summary>
-                  <p className="text-gray-600 mt-3">
-                    Absolutely! You can drop off your device and we will call you
-                    when its ready for pickup.
-                  </p>
-                </details>
-
-                <details className="bg-gray-50 p-4 rounded-lg">
-                  <summary className="font-semibold text-navy-dark cursor-pointer hover:text-indigo-600">
-                    What payment methods do you accept?
-                  </summary>
-                  <p className="text-gray-600 mt-3">
-                    We accept cash, credit cards, debit cards, and online
-                    transfers. Payment is made at the shop when you pick up
-                    your device.
-                  </p>
-                </details>
-              </div>
-            </div>
-
-            {/* Service Area */}
-            <div>
-              <h3 className="text-2xl font-bold text-navy-dark mb-6">
-                About AzeroTech
-              </h3>
-              <div className="space-y-4 text-gray-700">
-                <p>
-                  AzeroTech is your trusted local repair shop serving the Imus,
-                  Cavite community with professional device repair services and
-                  quality accessories.
-                </p>
-
-                <p>
-                  <strong>Our Mission:</strong> To provide fast, reliable, and
-                  affordable repair services that keep your devices running
-                  smoothly.
-                </p>
-
-                <p>
-                  <strong>Why Choose Us:</strong>
-                </p>
-                <ul className="list-disc list-inside space-y-2 text-gray-700">
-                  <li>Expert technicians with years of experience</li>
-                  <li>Transparent pricing with no hidden fees</li>
-                  <li>30-day warranty on all repairs</li>
-                  <li>Quick turnaround times</li>
-                  <li>Friendly and professional service</li>
-                  <li>Convenient appointment booking</li>
-                </ul>
-
-                <p>
-                  Whether you need a simple phone screen replacement or a full
-                  laptop reformat, AzeroTech is here to help!
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Map Embed */}
-      <section className="py-24 md:py-32 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Find Us on the <span className="text-indigo-600">Map</span>
-          </h2>
-
-          <div className="bg-white rounded-2xl overflow-hidden border-2 border-gray-200 shadow-lg h-96 md:h-[500px]">
-            <iframe
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              loading="lazy"
-              allowFullScreen
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3863.4457556754836!2d120.93487762346017!3d14.328614385947328!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d51b90000001%3A0x1234567890!2sImus%2C%20Cavite!5e0!3m2!1sen!2sph!4v1234567890"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-24 md:py-32 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8">
+      {/* ─── CTA ─── */}
+      <section
+        className="py-36 md:py-44"
+        style={{ background: "linear-gradient(135deg, #080B1A 0%, #0F1535 100%)" }}
+      >
+        <div className="flex flex-col items-center text-center max-w-2xl mx-auto px-6 gap-8">
+          <motion.h2 {...fadeUpView()} className="text-white" style={{ fontWeight: 700 }}>
             Ready to Get Started?
-          </h2>
-          <p className="text-lg text-gray-300 mb-10 leading-relaxed">
-            Book an appointment now or give us a call!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link href="/book-appointment" className="btn btn-primary text-lg">
-              Book Appointment
+          </motion.h2>
+          <motion.p {...fadeUpView(0.08)} className="text-slate-400 max-w-sm">
+            Book an appointment now or give us a call — we&apos;re happy to help.
+          </motion.p>
+          <motion.div
+            {...fadeUpView(0.16)}
+            className="flex flex-col sm:flex-row items-center gap-4 mt-2"
+          >
+            <Link
+              href="/book-appointment"
+              className="inline-flex items-center gap-2.5 text-white px-8 py-4 rounded-xl transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                fontWeight: 600,
+                fontSize: "1.05rem",
+                boxShadow: "0 8px 32px rgba(79,110,247,0.35)",
+              }}
+            >
+              Book Appointment <ArrowRight className="w-5 h-5 shrink-0" />
             </Link>
-            <a href="tel:+639123456789" className="btn btn-secondary text-lg">
+            <a
+              href="tel:+639123456789"
+              className="inline-flex items-center gap-2.5 border text-white px-8 py-4 rounded-xl transition-all hover:bg-white/10"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(255,255,255,0.15)",
+                fontWeight: 500,
+                fontSize: "1.05rem",
+              }}
+            >
+              <Phone className="w-5 h-5 shrink-0" style={{ color: "#8B9EFF" }} />
               Call Us
             </a>
-          </div>
+          </motion.div>
         </div>
       </section>
-    </>
+
+    </div>
   );
 }
