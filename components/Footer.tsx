@@ -1,101 +1,109 @@
 import Link from "next/link";
+import { MapPin, Phone, Clock, MessageCircle } from "lucide-react";
+import Logo from "./Logo";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-navy-dark border-t border-indigo-500/20 text-white py-8 md:py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+    <footer style={{ background: "#080B1A", borderTop: "1px solid rgba(79,110,247,0.15)" }}>
+      <div className="max-w-6xl mx-auto px-6 sm:px-10 lg:px-12 py-16 md:py-20">
+
+        {/* Main grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 mb-14">
+
           {/* Brand */}
-          <div>
-            <h3 className="text-lg font-bold mb-4">ASKJADNSs</h3>
-            <p className="text-gray-400 text-sm">
-              Professional phone and laptop repair services with modern,
-              affordable accessories.
+          <div className="flex flex-col gap-5">
+            <Logo variant="light" />
+            <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
+              Professional electronics repair and quality accessories in Imus, Cavite.
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/" className="text-gray-400 hover:text-indigo-400">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/services"
-                  className="text-gray-400 hover:text-indigo-400"
-                >
-                  Services
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/accessories"
-                  className="text-gray-400 hover:text-indigo-400"
-                >
-                  Accessories
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-gray-400 hover:text-indigo-400"
-                >
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Hours */}
-          <div>
-            <h4 className="font-semibold mb-4">Store Hours</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>Monday - Sunday</li>
-              <li>9:00 AM - 6:00 PM</li>
-              <li className="pt-2 text-indigo-400">Call for Extensions</li>
+          {/* Navigate */}
+          <div className="flex flex-col gap-6">
+            <h4
+              className="text-white text-xs uppercase tracking-widest"
+              style={{ fontWeight: 700 }}
+            >
+              Navigate
+            </h4>
+            <ul className="flex flex-col gap-3">
+              {[
+                { label: "Home",              href: "/"                  },
+                { label: "Services",          href: "/services"          },
+                { label: "Book Appointment",  href: "/book-appointment"  },
+                { label: "Accessories",       href: "/accessories"       },
+                { label: "Contact",           href: "/contact"           },
+              ].map(({ label, href }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="text-slate-400 text-sm transition-colors hover:text-white"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Contact */}
-          <div>
-            <h4 className="font-semibold mb-4">Contact</h4>
-            <ul className="space-y-2">
-              <li>
+          <div className="flex flex-col gap-6">
+            <h4
+              className="text-white text-xs uppercase tracking-widest"
+              style={{ fontWeight: 700 }}
+            >
+              Contact
+            </h4>
+            <ul className="flex flex-col gap-4">
+              <li className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#F43F5E" }} />
+                <span className="text-slate-400 text-sm leading-relaxed">
+                  9WCC+FG Imus, Cavite
+                </span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone className="w-4 h-4 shrink-0" style={{ color: "#F43F5E" }} />
                 <a
-                  href="tel:+639123456789"
-                  className="text-gray-400 hover:text-indigo-400 text-sm"
+                  href="tel:+639000000000"
+                  className="text-slate-400 text-sm transition-colors hover:text-white"
                 >
-                  +63 912 345 6789
+                  +63 900 000 0000
                 </a>
               </li>
-              <li>
+              <li className="flex items-center gap-3">
+                <Clock className="w-4 h-4 shrink-0" style={{ color: "#94A3B8" }} />
+                <span className="text-slate-400 text-sm">Open Mon–Sun, 9AM–7PM</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <MessageCircle className="w-4 h-4 shrink-0" style={{ color: "#4F6EF7" }} />
                 <a
                   href="https://m.me/azerotech"
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-indigo-400 text-sm"
+                  rel="noreferrer"
+                  className="text-sm transition-colors hover:opacity-80"
+                  style={{ color: "#6B84FF" }}
                 >
                   Message on Messenger
                 </a>
               </li>
-              <li>
-                <p className="text-gray-400 text-sm">Imus, Cavite</p>
-              </li>
             </ul>
           </div>
+
         </div>
 
-        <div className="border-t border-indigo-500/20 pt-8">
-          <p className="text-center text-gray-500 text-sm">
+        {/* Bottom bar */}
+        <div
+          className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-8"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          <p className="text-slate-500 text-sm">
             &copy; {currentYear} AzeroTech. All rights reserved.
           </p>
+          <p className="text-slate-500 text-sm">Imus, Cavite, Philippines</p>
         </div>
+
       </div>
     </footer>
   );
