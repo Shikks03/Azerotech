@@ -2,6 +2,76 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  User,
+  CheckCircle2,
+  Phone,
+  MessageCircle,
+} from "lucide-react";
+
+const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, delay, ease },
+});
+
+const fadeUpView = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true },
+  transition: { duration: 0.55, delay, ease },
+});
+
+const services = [
+  {
+    id: "phone",
+    label: "Phone Repair",
+    desc: "LCD, charging, buttons, reformat & more",
+    color: "#4F6EF7",
+    bg: "#EEF1FF",
+  },
+  {
+    id: "laptop",
+    label: "Laptop / Desktop Repair",
+    desc: "OS reformat, hardware maintenance & tuning",
+    color: "#06B6D4",
+    bg: "#EEF1FF",
+  },
+  {
+    id: "checkup",
+    label: "Device Checkup",
+    desc: "General diagnostics and assessment",
+    color: "#8B5CF6",
+    bg: "#EEF1FF",
+  },
+];
+
+const timeSlots = [
+  "9:00 AM",  "9:30 AM",
+  "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM",
+  "1:00 PM",  "1:30 PM",
+  "2:00 PM",  "2:30 PM",
+  "3:00 PM",  "3:30 PM",
+  "4:00 PM",  "4:30 PM",
+  "5:00 PM",  "5:30 PM",
+];
+
+const steps = [
+  { n: 1, label: "Service",    Icon: CheckCircle2 },
+  { n: 2, label: "Date & Time", Icon: CalendarDays },
+  { n: 3, label: "Your Info",  Icon: User },
+  { n: 4, label: "Confirm",    Icon: CheckCircle2 },
+];
+
+const isPhoneValid = (v: string) => /^09\d{9}$/.test(v);
 
 export default function BookAppointment() {
   const [step, setStep] = useState(1);
@@ -15,448 +85,608 @@ export default function BookAppointment() {
     deviceType: "",
     problem: "",
   });
+  const [phoneError, setPhoneError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
 
-  const services = [
-    "Phone Repair",
-    "Laptop/Desktop Repair",
-    "Device Checkup",
-  ];
-
-  const timeSlots = [
-    "09:00",
-    "09:30",
-    "10:00",
-    "10:30",
-    "11:00",
-    "11:30",
-    "13:00",
-    "13:30",
-    "14:00",
-    "14:30",
-    "15:00",
-    "15:30",
-    "16:00",
-    "16:30",
-    "17:00",
-    "17:30",
-  ];
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "").slice(0, 11);
+      setFormData((prev) => ({ ...prev, phone: digits }));
+      if (digits.length > 0 && !digits.startsWith("09")) {
+        setPhoneError("Phone number must start with 09.");
+      } else if (digits.length > 0 && digits.length < 11) {
+        setPhoneError("Phone number must be exactly 11 digits.");
+      } else {
+        setPhoneError("");
+      }
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleNext = () => {
-    if (step < 4) setStep(step + 1);
+  const getMinDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split("T")[0];
   };
 
-  const handlePrevious = () => {
-    if (step > 1) setStep(step - 1);
+  const getMaxDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split("T")[0];
   };
+
+  const canProceed = () => {
+    if (step === 1) return !!formData.service;
+    if (step === 2) return !!formData.date && !!formData.time;
+    if (step === 3)
+      return (
+        !!formData.name &&
+        isPhoneValid(formData.phone) &&
+        !!formData.brand &&
+        !!formData.deviceType
+      );
+    return true;
+  };
+
+  const handleNext = () => { if (step < 4) setStep(step + 1); };
+  const handlePrev = () => { if (step > 1) setStep(step - 1); };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setConfirmed(true);
-    console.log("Appointment Data:", formData);
-    // Here you would send the data to your backend
   };
 
-  const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
-  };
+  const formatDate = (iso: string) =>
+    iso
+      ? new Date(iso + "T00:00:00").toLocaleDateString("en-PH", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : "";
 
-  const getMaxDate = () => {
-    const twoWeeks = new Date();
-    twoWeeks.setDate(twoWeeks.getDate() + 14);
-    return twoWeeks.toISOString().split("T")[0];
-  };
-
+  /* ─── SUCCESS SCREEN ─── */
   if (confirmed) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-navy-dark to-indigo-900 pt-32 pb-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl p-8 md:p-12 text-center animate-fade-in">
-            <div className="text-6xl mb-6">✅</div>
-            <h1 className="text-3xl md:text-4xl font-bold text-navy-dark mb-4">
-              Appointment Confirmed!
-            </h1>
-            <div className="bg-indigo-50 p-6 rounded-xl mb-8 text-left">
-              <h2 className="text-lg font-semibold text-navy-dark mb-4">
-                Your Appointment Details:
-              </h2>
-              <div className="space-y-3 text-gray-700">
-                <p>
-                  <strong>Service:</strong> {formData.service}
-                </p>
-                <p>
-                  <strong>Date:</strong>{" "}
-                  {new Date(formData.date).toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Time:</strong> {formData.time}
-                </p>
-                <p>
-                  <strong>Name:</strong> {formData.name}
-                </p>
-                <p>
-                  <strong>Device:</strong> {formData.brand} {formData.deviceType}
-                </p>
-              </div>
-            </div>
-            <p className="text-xl text-gray-600 mb-8">
-              Please arrive at your selected time. If you need to reschedule,
-              call us at +63 912 345 6789.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/" className="btn btn-primary">
-                Back to Home
-              </Link>
-              <Link href="/accessories" className="btn btn-secondary">
-                Browse Accessories
-              </Link>
-            </div>
+      <div
+        className="min-h-screen flex items-center justify-center px-6 py-24"
+        style={{ background: "linear-gradient(135deg, #080B1A 0%, #0F1535 100%)" }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.45, ease }}
+          className="w-full max-w-lg bg-white rounded-2xl p-10 text-center"
+          style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.35)" }}
+        >
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
+            style={{ background: "#DCFCE7" }}
+          >
+            <CheckCircle2 className="w-8 h-8" style={{ color: "#16A34A" }} />
           </div>
-        </div>
+          <h1 className="text-2xl font-bold text-[#0F172A] mb-2">Appointment Confirmed!</h1>
+          <p className="text-slate-500 mb-8 text-sm">
+            Please arrive at your selected time. Need to reschedule? Call us.
+          </p>
+
+          <div
+            className="rounded-xl p-6 text-left mb-8 space-y-3"
+            style={{ background: "#F7F8FF", border: "1px solid #E2E8F0" }}
+          >
+            {[
+              ["Service",    formData.service],
+              ["Date",       formatDate(formData.date)],
+              ["Time",       formData.time],
+              ["Name",       formData.name],
+              ["Phone",      formData.phone],
+              ["Device",     `${formData.brand} ${formData.deviceType}`],
+              ...(formData.problem ? [["Problem", formData.problem] as [string, string]] : []),
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 text-sm">
+                <span className="text-slate-500 font-medium shrink-0">{k}</span>
+                <span className="text-[#0F172A] font-semibold text-right">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href="/"
+              className="flex-1 inline-flex items-center justify-center gap-2 text-white py-3.5 rounded-xl font-semibold transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #4F6EF7, #6B84FF)", boxShadow: "0 6px 20px rgba(79,110,247,0.3)" }}
+            >
+              Back to Home
+            </Link>
+            <Link
+              href="/accessories"
+              className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold transition-all hover:bg-slate-100 border border-slate-200 text-[#0F172A]"
+            >
+              Browse Accessories
+            </Link>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
+  /* ─── MAIN PAGE ─── */
   return (
-    <>
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-32 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Book an Appointment
-          </h1>
-          <p className="text-xl text-gray-300">
-            Schedule your device checkup in 4 easy steps
-          </p>
+    <div className="flex flex-col">
+
+      {/* ─── HERO ─── */}
+      <section
+        className="relative overflow-hidden flex flex-col justify-center"
+        style={{
+          background: "linear-gradient(135deg, #080B1A 0%, #0F1535 60%, #080B1A 100%)",
+          minHeight: "50vh",
+        }}
+      >
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+        <div
+          className="absolute -top-32 -left-32 w-150 h-150 rounded-full opacity-10 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #4F6EF7, transparent 70%)" }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-100 h-100 rounded-full pointer-events-none"
+          style={{ opacity: 0.08, background: "radial-gradient(circle, #06B6D4, transparent 70%)" }}
+        />
+
+        <div className="relative flex flex-col items-center justify-center text-center px-6 sm:px-10 lg:px-16 py-24 pb-36 max-w-4xl mx-auto w-full">
+          <motion.div {...fadeUp(0)} className="mb-10">
+            <span
+              className="inline-flex items-center gap-2 border rounded-full px-5 py-2.5 text-sm"
+              style={{
+                background: "rgba(79,110,247,0.15)",
+                borderColor: "rgba(79,110,247,0.3)",
+                color: "#8B9EFF",
+                fontWeight: 500,
+              }}
+            >
+              <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+              4 Easy Steps
+            </span>
+          </motion.div>
+          <motion.h1
+            {...fadeUp(0.08)}
+            className="text-white mb-6"
+            style={{ fontSize: "clamp(2.2rem, 5.5vw, 3.8rem)", fontWeight: 700, lineHeight: 1.1 }}
+          >
+            Book an{" "}
+            <span
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #06B6D4)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Appointment
+            </span>
+          </motion.h1>
+          <motion.p
+            {...fadeUp(0.16)}
+            className="text-slate-400 max-w-md leading-relaxed"
+            style={{ fontSize: "clamp(1rem, 2.5vw, 1.1rem)" }}
+          >
+            Schedule your device repair or checkup in just a few steps.
+          </motion.p>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none">
+          <svg viewBox="0 0 1440 64" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-16">
+            <path d="M0 64L1440 64L1440 32C1200 0 240 64 0 32L0 64Z" fill="#F7F8FF" />
+          </svg>
         </div>
       </section>
 
-      {/* Booking Form */}
-      <section className="py-16 md:py-24 bg-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Progress Indicator */}
-          <div className="mb-12">
-            <div className="flex justify-between mb-8">
-              {[1, 2, 3, 4].map((s) => (
-                <div key={s} className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
-                      step >= s
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-300 text-gray-600"
-                    }`}
-                  >
-                    {s}
+      {/* ─── FORM ─── */}
+      <section className="py-16 md:py-24" style={{ background: "#F7F8FF" }}>
+        <div className="max-w-2xl mx-auto px-6 sm:px-10">
+
+          {/* Stepper */}
+          <motion.div {...fadeUpView()} className="mb-12">
+            <div className="flex items-center justify-between gap-2 mb-5">
+              {steps.map((s, idx) => (
+                <div key={s.n} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center w-full">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
+                      style={
+                        step >= s.n
+                          ? { background: "linear-gradient(135deg, #4F6EF7, #6B84FF)", color: "white", boxShadow: "0 4px 12px rgba(79,110,247,0.35)" }
+                          : { background: "#E2E8F0", color: "#94A3B8" }
+                      }
+                    >
+                      {s.n}
+                    </div>
+                    <p
+                      className="text-xs font-semibold mt-2 text-center"
+                      style={{ color: step >= s.n ? "#4F6EF7" : "#94A3B8" }}
+                    >
+                      {s.label}
+                    </p>
                   </div>
-                  <p className="text-sm font-semibold mt-2 text-center">
-                    {[
-                      "Service",
-                      "Date & Time",
-                      "Info",
-                      "Confirm",
-                    ][s - 1]}
-                  </p>
+                  {idx < steps.length - 1 && (
+                    <div className="flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all duration-300"
+                      style={{ background: step > s.n ? "#4F6EF7" : "#E2E8F0" }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
-            <div className="w-full bg-gray-300 h-1 rounded-full">
-              <div
-                className="bg-indigo-600 h-1 rounded-full transition-all"
-                style={{ width: `${(step / 4) * 100}%` }}
-              />
-            </div>
-          </div>
+          </motion.div>
 
-          <form onSubmit={handleSubmit}>
-            {/* Step 1: Select Service */}
-            {step === 1 && (
-              <div className="animate-fade-in">
-                <h2 className="text-2xl font-bold mb-6 text-navy-dark">
-                  Step 1: Select Service
-                </h2>
-                <div className="grid grid-cols-1 gap-4">
-                  {services.map((service) => (
-                    <button
-                      key={service}
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({ ...prev, service }))
-                      }
-                      className={`p-6 text-left rounded-xl border-2 transition-all font-semibold text-lg ${
-                        formData.service === service
-                          ? "border-indigo-600 bg-indigo-50 text-indigo-600"
-                          : "border-gray-300 hover:border-indigo-400"
-                      }`}
-                    >
-                      {service}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          {/* Card */}
+          <motion.div
+            {...fadeUpView(0.08)}
+            className="bg-white rounded-2xl p-8 md:p-10 border border-slate-100"
+            style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}
+          >
+            <form onSubmit={handleSubmit}>
 
-            {/* Step 2: Date & Time */}
-            {step === 2 && (
-              <div className="animate-fade-in space-y-6">
-                <h2 className="text-2xl font-bold text-navy-dark">
-                  Step 2: Choose Date & Time
-                </h2>
+              {/* ── Step 1: Service ── */}
+              {step === 1 && (
                 <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">
-                    Select Date:
-                  </label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleInputChange}
-                    min={getMinDate()}
-                    max={getMaxDate()}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 text-lg"
-                  />
-                </div>
-                {formData.date && (
-                  <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-3">
-                      Select Time (30-minute slots):
-                    </label>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                      {timeSlots.map((slot) => (
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#4F6EF7" }}>Step 1 of 4</p>
+                  <h2 className="text-[#0F172A] text-2xl font-bold mb-6">Select a Service</h2>
+                  <div className="flex flex-col gap-4">
+                    {services.map((svc) => {
+                      const selected = formData.service === svc.label;
+                      return (
                         <button
-                          key={slot}
+                          key={svc.id}
                           type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, time: slot }))
+                          onClick={() => setFormData((p) => ({ ...p, service: svc.label }))}
+                          className="flex items-center gap-5 text-left rounded-xl px-6 py-5 border-2 transition-all duration-200"
+                          style={
+                            selected
+                              ? { borderColor: svc.color, background: svc.bg }
+                              : { borderColor: "#E2E8F0", background: "white" }
                           }
-                          className={`p-3 rounded-lg font-semibold text-center transition-all ${
-                            formData.time === slot
-                              ? "bg-indigo-600 text-white"
-                              : "bg-gray-200 hover:bg-gray-300"
-                          }`}
                         >
-                          {slot}
+                          <div
+                            className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: svc.bg }}
+                          >
+                            <CheckCircle2
+                              className="w-5 h-5"
+                              style={{ color: selected ? svc.color : "#CBD5E1" }}
+                            />
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#0F172A]">{svc.label}</p>
+                            <p className="text-slate-500 text-sm">{svc.desc}</p>
+                          </div>
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Step 3: Customer Info */}
-            {step === 3 && (
-              <div className="animate-fade-in space-y-6">
-                <h2 className="text-2xl font-bold text-navy-dark">
-                  Step 3: Your Information
-                </h2>
-
-                <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-2">
-                    Full Name:
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 text-lg"
-                    required
-                  />
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-2">
-                    Phone Number:
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="09XX XXX XXXX"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 text-lg"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* ── Step 2: Date & Time ── */}
+              {step === 2 && (
+                <div className="space-y-7">
                   <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-2">
-                      Device Brand:
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#4F6EF7" }}>Step 2 of 4</p>
+                    <h2 className="text-[#0F172A] text-2xl font-bold">Choose Date & Time</h2>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                      <CalendarDays className="inline w-4 h-4 mr-1.5 mb-0.5" style={{ color: "#4F6EF7" }} />
+                      Select Date
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={formData.date}
+                      onChange={handleInputChange}
+                      min={getMinDate()}
+                      max={getMaxDate()}
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A]"
+                      style={{ fontSize: "1rem" }}
+                      onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
+                      onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                    />
+                  </div>
+
+                  {formData.date && (
+                    <div>
+                      <label className="block text-sm font-semibold text-[#0F172A] mb-3">
+                        <Clock className="inline w-4 h-4 mr-1.5 mb-0.5" style={{ color: "#4F6EF7" }} />
+                        Select Time Slot
+                      </label>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                        {timeSlots.map((slot) => {
+                          const selected = formData.time === slot;
+                          return (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setFormData((p) => ({ ...p, time: slot }))}
+                              className="py-2.5 rounded-xl text-sm font-semibold text-center transition-all duration-200 border-2"
+                              style={
+                                selected
+                                  ? { background: "linear-gradient(135deg, #4F6EF7, #6B84FF)", color: "white", borderColor: "transparent", boxShadow: "0 4px 12px rgba(79,110,247,0.3)" }
+                                  : { background: "#F7F8FF", color: "#475569", borderColor: "#E2E8F0" }
+                              }
+                            >
+                              {slot}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Step 3: Your Info ── */}
+              {step === 3 && (
+                <div className="space-y-5">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#4F6EF7" }}>Step 3 of 4</p>
+                    <h2 className="text-[#0F172A] text-2xl font-bold">Your Information</h2>
+                  </div>
+
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                      Full Name <span style={{ color: "#EF4444" }}>*</span>
                     </label>
                     <input
                       type="text"
-                      name="brand"
-                      value={formData.brand}
+                      name="name"
+                      value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="e.g., Samsung"
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 text-lg"
-                      required
+                      placeholder="Enter your full name"
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400"
+                      onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
+                      onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
                     />
                   </div>
+
+                  {/* Phone Number */}
                   <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-2">
-                      Device Type:
+                    <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                      Phone Number <span style={{ color: "#EF4444" }}>*</span>
                     </label>
-                    <select
-                      name="deviceType"
-                      value={formData.deviceType}
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 text-lg"
-                      required
-                    >
-                      <option value="">Select device type</option>
-                      <option value="Phone">Phone</option>
-                      <option value="Laptop">Laptop</option>
-                      <option value="Desktop">Desktop</option>
-                    </select>
+                      placeholder="09XXXXXXXXX"
+                      maxLength={11}
+                      className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400 transition-colors"
+                      style={{ borderColor: phoneError ? "#EF4444" : "#E2E8F0" }}
+                      onFocus={(e) => { if (!phoneError) e.target.style.borderColor = "#4F6EF7"; }}
+                      onBlur={(e) => { if (!phoneError) e.target.style.borderColor = "#E2E8F0"; }}
+                    />
+                    {phoneError && (
+                      <p className="text-sm mt-1.5 font-medium" style={{ color: "#EF4444" }}>
+                        {phoneError}
+                      </p>
+                    )}
+                    {!phoneError && formData.phone.length > 0 && (
+                      <p className="text-xs mt-1.5 text-slate-400">
+                        {formData.phone.length} / 11 digits
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Brand + Device Type */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                        Device Brand <span style={{ color: "#EF4444" }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="brand"
+                        value={formData.brand}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Samsung"
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400"
+                        onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
+                        onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                        Device Type <span style={{ color: "#EF4444" }}>*</span>
+                      </label>
+                      <select
+                        name="deviceType"
+                        value={formData.deviceType}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] bg-white"
+                        onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
+                        onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                      >
+                        <option value="">Select type</option>
+                        <option value="Phone">Phone</option>
+                        <option value="Laptop">Laptop</option>
+                        <option value="Desktop">Desktop</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Problem (optional) */}
+                  <div>
+                    <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                      Problem Description <span className="text-slate-400 font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      name="problem"
+                      value={formData.problem}
+                      onChange={handleInputChange}
+                      placeholder="Describe the issue with your device"
+                      rows={4}
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400 resize-none"
+                      onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
+                      onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                    />
                   </div>
                 </div>
+              )}
 
+              {/* ── Step 4: Review ── */}
+              {step === 4 && (
                 <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-2">
-                    Problem Description:
-                  </label>
-                  <textarea
-                    name="problem"
-                    value={formData.problem}
-                    onChange={handleInputChange}
-                    placeholder="Describe the issue with your device"
-                    rows={4}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 text-lg"
-                    required
-                  />
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#4F6EF7" }}>Step 4 of 4</p>
+                  <h2 className="text-[#0F172A] text-2xl font-bold mb-6">Review & Confirm</h2>
+
+                  <div
+                    className="rounded-xl overflow-hidden mb-8"
+                    style={{ border: "1px solid #E2E8F0" }}
+                  >
+                    {[
+                      ["Service",    formData.service],
+                      ["Date",       formatDate(formData.date)],
+                      ["Time",       formData.time],
+                      ["Name",       formData.name],
+                      ["Phone",      formData.phone],
+                      ["Device",     `${formData.brand} ${formData.deviceType}`],
+                      ...(formData.problem ? [["Problem", formData.problem] as [string, string]] : []),
+                    ].map(([k, v], idx, arr) => (
+                      <div
+                        key={k}
+                        className="flex justify-between gap-4 px-6 py-4 text-sm"
+                        style={{
+                          background: idx % 2 === 0 ? "#F7F8FF" : "white",
+                          borderBottom: idx < arr.length - 1 ? "1px solid #E2E8F0" : "none",
+                        }}
+                      >
+                        <span className="text-slate-500 font-medium shrink-0">{k}</span>
+                        <span className="text-[#0F172A] font-semibold text-right">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full flex items-center justify-center gap-2.5 text-white py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90"
+                    style={{
+                      background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                      boxShadow: "0 8px 24px rgba(79,110,247,0.35)",
+                    }}
+                  >
+                    Confirm Appointment <ArrowRight className="w-5 h-5 shrink-0" />
+                  </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Step 4: Confirmation */}
-            {step === 4 && (
-              <div className="animate-fade-in">
-                <h2 className="text-2xl font-bold mb-6 text-navy-dark">
-                  Step 4: Review & Confirm
-                </h2>
-                <div className="bg-indigo-50 p-8 rounded-xl border-2 border-indigo-200 space-y-4">
-                  <div className="flex justify-between py-3 border-b border-indigo-200">
-                    <span className="font-semibold text-gray-700">Service:</span>
-                    <span className="text-navy-dark font-bold">
-                      {formData.service}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-3 border-b border-indigo-200">
-                    <span className="font-semibold text-gray-700">
-                      Date & Time:
-                    </span>
-                    <span className="text-navy-dark font-bold">
-                      {new Date(formData.date).toLocaleDateString()} at{" "}
-                      {formData.time}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-3 border-b border-indigo-200">
-                    <span className="font-semibold text-gray-700">Name:</span>
-                    <span className="text-navy-dark font-bold">
-                      {formData.name}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-3 border-b border-indigo-200">
-                    <span className="font-semibold text-gray-700">Phone:</span>
-                    <span className="text-navy-dark font-bold">
-                      {formData.phone}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-3 border-b border-indigo-200">
-                    <span className="font-semibold text-gray-700">Device:</span>
-                    <span className="text-navy-dark font-bold">
-                      {formData.brand} {formData.deviceType}
-                    </span>
-                  </div>
-                  <div className="py-3">
-                    <span className="font-semibold text-gray-700">Problem:</span>
-                    <p className="text-navy-dark mt-2">{formData.problem}</p>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full btn btn-primary mt-8 text-lg py-4"
-                >
-                  Confirm Appointment
-                </button>
-              </div>
-            )}
-
-            {/* Navigation Buttons */}
-            <div className="flex gap-4 mt-8">
-              <button
-                type="button"
-                onClick={handlePrevious}
-                disabled={step === 1}
-                className="flex-1 btn btn-secondary disabled:opacity-50"
-              >
-                ← Previous
-              </button>
+              {/* Navigation */}
               {step < 4 && (
+                <div className="flex gap-3 mt-8">
+                  {step > 1 && (
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm border-2 border-slate-200 text-slate-600 transition-all hover:bg-slate-50"
+                    >
+                      <ArrowLeft className="w-4 h-4 shrink-0" /> Previous
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!canProceed()}
+                    className="flex-1 flex items-center justify-center gap-2 text-white py-3.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{
+                      background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                      boxShadow: canProceed() ? "0 6px 20px rgba(79,110,247,0.3)" : "none",
+                    }}
+                  >
+                    Next <ArrowRight className="w-4 h-4 shrink-0" />
+                  </button>
+                </div>
+              )}
+
+              {step === 4 && (
                 <button
                   type="button"
-                  onClick={handleNext}
-                  disabled={
-                    (step === 1 && !formData.service) ||
-                    (step === 2 && (!formData.date || !formData.time)) ||
-                    (step === 3 &&
-                      (!formData.name ||
-                        !formData.phone ||
-                        !formData.brand ||
-                        !formData.deviceType ||
-                        !formData.problem))
-                  }
-                  className="flex-1 btn btn-primary disabled:opacity-50"
+                  onClick={handlePrev}
+                  className="flex items-center gap-2 mt-4 px-4 py-2.5 rounded-xl font-semibold text-sm border-2 border-slate-200 text-slate-600 transition-all hover:bg-slate-50"
                 >
-                  Next →
+                  <ArrowLeft className="w-4 h-4 shrink-0" /> Go Back
                 </button>
               )}
-            </div>
-          </form>
+
+            </form>
+          </motion.div>
         </div>
       </section>
 
-      {/* Info Section */}
-      <section className="bg-gradient-to-r from-navy-dark/5 to-indigo-600/5 py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold mb-6 text-center">
-            Need Help?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl">
-              <h3 className="font-bold text-lg mb-2">Call Us</h3>
-              <a
-                href="tel:+639123456789"
-                className="text-indigo-600 font-semibold"
+      {/* ─── NEED HELP ─── */}
+      <section className="py-16 md:py-24" style={{ background: "#080B1A" }}>
+        <div className="max-w-2xl mx-auto px-6 sm:px-10">
+          <motion.div {...fadeUpView()} className="flex flex-col items-center text-center mb-10">
+            <span className="inline-block text-sm mb-4 uppercase tracking-widest font-semibold" style={{ color: "#8B9EFF" }}>
+              Need Help?
+            </span>
+            <h2 className="text-white font-bold">Reach Out Directly</h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {[
+              {
+                Icon: Phone,
+                label: "Call Us",
+                detail: "+63 912 345 6789",
+                href: "tel:+639123456789",
+                accentBg: "rgba(79,110,247,0.15)",
+                accentColor: "#8B9EFF",
+              },
+              {
+                Icon: MessageCircle,
+                label: "Messenger",
+                detail: "Chat on Messenger",
+                href: "https://m.me/azerotech",
+                accentBg: "rgba(0,132,255,0.15)",
+                accentColor: "#60A5FA",
+              },
+            ].map((item, idx) => (
+              <motion.a
+                key={item.label}
+                {...fadeUpView(idx * 0.08)}
+                href={item.href}
+                target={item.href.startsWith("http") ? "_blank" : undefined}
+                rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                className="flex items-center gap-5 rounded-2xl px-6 py-5 transition-all duration-300 group"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
-                +63 912 345 6789
-              </a>
-            </div>
-            <div className="bg-white p-6 rounded-xl">
-              <h3 className="font-bold text-lg mb-2">Message Us</h3>
-              <a
-                href="https://m.me/azerotech"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-600 font-semibold"
-              >
-                Chat on Messenger
-              </a>
-            </div>
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: item.accentBg }}
+                >
+                  <item.Icon className="w-5 h-5" style={{ color: item.accentColor }} />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">{item.label}</p>
+                  <p className="font-bold" style={{ color: item.accentColor }}>{item.detail}</p>
+                </div>
+              </motion.a>
+            ))}
           </div>
         </div>
       </section>
-    </>
+
+    </div>
   );
 }
