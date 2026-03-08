@@ -43,21 +43,21 @@ export default function Contact() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-32 pb-16">
+      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-40 pb-28 md:pb-36">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
             Get in <span className="text-indigo-300">Touch</span>
           </h1>
-          <p className="text-xl text-gray-300">
-            We're here to help with all your device needs
+          <p className="text-xl text-gray-300 leading-relaxed">
+            We are here to help with all your device needs
           </p>
         </div>
       </section>
 
       {/* Contact Methods */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-24 md:py-32 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {contactMethods.map((method, idx) => (
               <a
                 key={idx}
@@ -90,12 +90,12 @@ export default function Contact() {
       </section>
 
       {/* Store Hours */}
-      <section className="bg-gray-50 py-16 md:py-24">
+      <section className="bg-gray-50 py-24 md:py-32">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">
             Store <span className="text-indigo-600">Hours</span>
           </h2>
-          <p className="text-center text-gray-600 mb-8">
+          <p className="text-center text-gray-600 mb-12 text-lg leading-relaxed">
             Plan your visit or reach out during these times
           </p>
 
@@ -145,9 +145,9 @@ export default function Contact() {
       </section>
 
       {/* Information Sections */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-24 md:py-32 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
             {/* FAQ */}
             <div>
               <h3 className="text-2xl font-bold text-navy-dark mb-6">
@@ -159,7 +159,7 @@ export default function Contact() {
                     How long does a typical repair take?
                   </summary>
                   <p className="text-gray-600 mt-3">
-                    Most repairs take 1-3 hours depending on the issue. We'll
+                    Most repairs take 1-3 hours depending on the issue. We will
                     give you an estimate when you bring in your device.
                   </p>
                 </details>
@@ -170,7 +170,7 @@ export default function Contact() {
                   </summary>
                   <p className="text-gray-600 mt-3">
                     Yes! All repairs come with a 30-day warranty. If the same
-                    issue occurs, we'll fix it for free.
+                    issue occurs, we will fix it for free.
                   </p>
                 </details>
 
@@ -179,8 +179,8 @@ export default function Contact() {
                     Can I drop off my device and come back later?
                   </summary>
                   <p className="text-gray-600 mt-3">
-                    Absolutely! You can drop off your device and we'll call you
-                    when it's ready for pickup.
+                    Absolutely! You can drop off your device and we will call you
+                    when its ready for pickup.
                   </p>
                 </details>
 
@@ -238,7 +238,7 @@ export default function Contact() {
       </section>
 
       {/* Map Embed */}
-      <section className="py-16 md:py-24 bg-gray-50">
+      <section className="py-24 md:py-32 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
             Find Us on the <span className="text-indigo-600">Map</span>
@@ -258,15 +258,15 @@ export default function Contact() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-16 md:py-24 text-white">
+      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-24 md:py-32 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold mb-8">
             Ready to Get Started?
           </h2>
-          <p className="text-lg text-gray-300 mb-8">
+          <p className="text-lg text-gray-300 mb-10 leading-relaxed">
             Book an appointment now or give us a call!
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link href="/book-appointment" className="btn btn-primary text-lg">
               Book Appointment
             </Link>

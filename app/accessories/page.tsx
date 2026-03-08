@@ -117,12 +117,12 @@ export default function Accessories() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-32 pb-16">
+      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-40 pb-28 md:pb-36">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
             Shop <span className="text-indigo-300">Accessories</span>
           </h1>
-          <p className="text-xl text-gray-300">
+          <p className="text-xl text-gray-300 leading-relaxed">
             Quality products available for pickup
           </p>
         </div>
@@ -157,9 +157,9 @@ export default function Accessories() {
       </section>
 
       {/* Products Grid */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-24 md:py-32 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
@@ -293,10 +293,10 @@ export default function Accessories() {
       )}
 
       {/* Info Section */}
-      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-16 text-white">
+      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-24 md:py-32 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Don't See What You Need?</h2>
-          <p className="text-lg text-gray-300 mb-6">
+          <h2 className="text-3xl font-bold mb-6">Dont See What You Need?</h2>
+          <p className="text-lg text-gray-300 mb-8 leading-relaxed">
             Call us and ask about other accessories we might have in stock!
           </p>
           <a href="tel:+639123456789" className="btn btn-primary text-lg">

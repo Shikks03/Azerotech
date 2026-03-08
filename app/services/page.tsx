@@ -32,37 +32,37 @@ export default function Services() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-32 pb-16">
+      <section className="bg-gradient-to-br from-navy-dark to-indigo-900 text-white pt-40 pb-28 md:pb-36">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 animate-fade-in">
             Our Services
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl animate-fade-in">
+          <p className="text-xl text-gray-300 max-w-2xl animate-fade-in leading-relaxed">
             Professional repair and maintenance services for all your devices
           </p>
         </div>
       </section>
 
       {/* Phone Repair Services */}
-      <section className="bg-white py-16 md:py-24">
+      <section className="bg-white py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div id="phone" className="mb-8 scroll-mt-24">
-            <h2 className="text-3xl md:text-4xl font-bold mb-2">
+          <div id="phone" className="mb-12 scroll-mt-24">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               📱 Phone <span className="text-indigo-600">Repair</span>
             </h2>
-            <p className="text-gray-600 mb-8 max-w-2xl">
+            <p className="text-gray-600 max-w-2xl text-lg leading-relaxed">
               Expert phone repair services for all brands and models. We handle
               hardware replacements, software issues, and more.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {phoneServices.map((service, idx) => (
               <div
                 key={idx}
-                className="group bg-gradient-to-br from-gray-50 to-white p-8 rounded-xl border border-gray-200 hover:border-indigo-400 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                className="group bg-gradient-to-br from-gray-50 to-white p-10 rounded-xl border border-gray-200 hover:border-indigo-400 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col items-center justify-center text-center min-h-45"
               >
-                <div className="text-5xl mb-4">{service.icon}</div>
+                <div className="text-5xl mb-5">{service.icon}</div>
                 <p className="text-lg font-semibold text-navy-dark">
                   {service.name}
                 </p>
@@ -73,13 +73,13 @@ export default function Services() {
       </section>
 
       {/* Laptop/Desktop Services */}
-      <section className="bg-gray-50 py-16 md:py-24">
+      <section className="bg-gray-50 py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div id="laptop" className="mb-8 scroll-mt-24">
-            <h2 className="text-3xl md:text-4xl font-bold mb-2">
+          <div id="laptop" className="mb-12 scroll-mt-24">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               💻 Laptop/Desktop <span className="text-indigo-600">Services</span>
             </h2>
-            <p className="text-gray-600 mb-8 max-w-2xl">
+            <p className="text-gray-600 max-w-2xl text-lg leading-relaxed">
               Keep your computers running smoothly with our professional
               maintenance and software services.
             </p>
@@ -89,9 +89,9 @@ export default function Services() {
             {laptopServices.map((service, idx) => (
               <div
                 key={idx}
-                className="group bg-white p-8 rounded-xl border border-gray-200 hover:border-indigo-400 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                className="group bg-white p-10 rounded-xl border border-gray-200 hover:border-indigo-400 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col items-center justify-center text-center min-h-45"
               >
-                <div className="text-5xl mb-4">{service.icon}</div>
+                <div className="text-5xl mb-5">{service.icon}</div>
                 <p className="text-lg font-semibold text-navy-dark">
                   {service.name}
                 </p>
@@ -102,16 +102,16 @@ export default function Services() {
       </section>
 
       {/* Accessories */}
-      <section className="bg-white py-16 md:py-24">
+      <section className="bg-white py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
             🛍️ Accessories <span className="text-indigo-600">Available</span>
           </h2>
-          <p className="text-gray-600 mb-8 max-w-2xl">
+          <p className="text-gray-600 mb-12 max-w-2xl text-lg leading-relaxed">
             Quality accessories in stock for immediate pickup or reservation.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {accessories.map((item, idx) => (
               <div
                 key={idx}
@@ -122,9 +122,9 @@ export default function Services() {
             ))}
           </div>
 
-          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-8 md:p-12 rounded-2xl border border-indigo-200">
+          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-12 md:p-16 rounded-2xl border border-indigo-200">
             <h3 className="text-2xl font-bold mb-4">Ready to Browse?</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
               Check out our full accessories catalog with images, prices, and
               reservation options.
             </p>
@@ -136,12 +136,12 @@ export default function Services() {
       </section>
 
       {/* CTA */}
-      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-16 md:py-24 text-white">
+      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-24 md:py-32 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Have Questions? Let's Help
+          <h2 className="text-3xl md:text-4xl font-bold mb-8">
+            Have Questions? Lets Help
           </h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link
               href="/book-appointment"
               className="btn btn-primary text-lg"

@@ -1,207 +1,533 @@
+"use client";
+
 import Link from "next/link";
-import WaveDivider from "@/components/WaveDivider";
+import { motion } from "motion/react";
+import {
+  ArrowRight,
+  Phone,
+  MessageCircle,
+  MapPin,
+  Smartphone,
+  Monitor,
+  ShoppingBag,
+  Zap,
+  Shield,
+  Clock3,
+  Star,
+} from "lucide-react";
+
+const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, delay, ease },
+});
+
+const fadeUpView = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true },
+  transition: { duration: 0.55, delay, ease },
+});
 
 export default function Home() {
-  const services = [
-    {
-      icon: "📱",
-      title: "Phone Repair",
-      description: "LCD replacement, reformats, and more",
-    },
-    {
-      icon: "💻",
-      title: "Laptop/Desktop",
-      description: "Professional reformatting services",
-    },
-    {
-      icon: "🛍️",
-      title: "Accessories",
-      description: "Quality chargers, cables, and more",
-    },
-  ];
-
   return (
-    <>
-      {/* Hero Section */}
-      <section className="relative min-h-screen bg-gradient-to-br from-navy-dark via-navy-dark to-indigo-900 overflow-hidden pt-20">
-        {/* Animated Gradient Mesh Background */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse-slow" />
-          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse-slow" />
-          <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse-slow" />
+    <div className="flex flex-col">
+      {/* ─── HERO ─── */}
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(135deg, #080B1A 0%, #0F1535 60%, #080B1A 100%)",
+          minHeight: "92vh",
+        }}
+      >
+        {/* Grid decoration */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
 
-          {/* Dot Grid Overlay */}
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle, #4F6EF7 1px, transparent 1px)",
-              backgroundSize: "50px 50px",
-            }}
-          />
-        </div>
+        {/* Glow orbs */}
+        <div
+          className="absolute -top-32 -left-32 w-150 h-150 rounded-full opacity-10 pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, #4F6EF7, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-100 h-100 rounded-full pointer-events-none"
+          style={{
+            opacity: 0.08,
+            background: "radial-gradient(circle, #06B6D4, transparent 70%)",
+          }}
+        />
 
         {/* Hero Content */}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 flex flex-col md:flex-row items-center gap-12">
-          <div className="flex-1 z-10 animate-slide-left">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Your Devices,{" "}
-              <span className="bg-gradient-to-r from-indigo-400 to-indigo-300 bg-clip-text text-transparent">
-                Our Priority
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed max-w-lg">
-              Professional phone repair, laptop reformat, and affordable
-              accessories for all your device needs. Fast, reliable, and
-              trustworthy.
-            </p>
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center py-28 sm:py-36">
+          {/* Badge */}
+          <motion.div {...fadeUp(0)} className="mb-8">
+            <span
+              className="inline-flex items-center gap-2 border rounded-full px-4 py-2 text-sm"
+              style={{
+                background: "rgba(79,110,247,0.15)",
+                borderColor: "rgba(79,110,247,0.3)",
+                color: "#8B9EFF",
+                fontWeight: 500,
+              }}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              Imus, Cavite · Open 7 Days a Week
+            </span>
+          </motion.div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/book-appointment"
-                className="btn btn-primary text-base md:text-lg"
-              >
-                📅 Book Appointment
-              </Link>
-              <a
-                href="tel:+639123456789"
-                className="btn btn-secondary text-base md:text-lg"
-              >
-                ☎️ Call Shop
-              </a>
-              <a
-                href="https://m.me/azerotech"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-ghost text-base md:text-lg"
-              >
-                💬 Message
-              </a>
-            </div>
-          </div>
+          {/* Headline */}
+          <motion.h1
+            {...fadeUp(0.08)}
+            className="text-white mb-6 max-w-3xl"
+            style={{
+              fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+              fontWeight: 700,
+              lineHeight: 1.1,
+            }}
+          >
+            We Fix What{" "}
+            <span
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #06B6D4)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Matters Most
+            </span>
+          </motion.h1>
 
-          {/* Hero Visual */}
-          <div className="flex-1 h-96 md:h-full relative animate-slide-right">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-3xl blur-2xl" />
-            <div className="relative w-full h-full flex items-center justify-center">
-              <div className="text-9xl md:text-8xl animate-pulse">📱</div>
-            </div>
-          </div>
+          {/* Subtext */}
+          <motion.p
+            {...fadeUp(0.16)}
+            className="text-slate-400 mb-10 max-w-xl leading-relaxed"
+            style={{ fontSize: "clamp(1rem, 2.5vw, 1.2rem)" }}
+          >
+            We repair phones, reformat laptops and computers, and offer
+            affordable accessories — fast, reliable, and honest.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            {...fadeUp(0.24)}
+            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+          >
+            <Link
+              href="/book-appointment"
+              className="inline-flex items-center justify-center gap-2.5 text-white px-8 py-4 rounded-xl transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                fontWeight: 600,
+                fontSize: "1.05rem",
+                boxShadow: "0 8px 32px rgba(79,110,247,0.35)",
+              }}
+            >
+              Book Appointment
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <a
+              href="tel:+639000000000"
+              className="inline-flex items-center justify-center gap-2.5 border text-white px-8 py-4 rounded-xl transition-all hover:bg-white/10"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(255,255,255,0.15)",
+                fontWeight: 500,
+                fontSize: "1.05rem",
+              }}
+            >
+              <Phone className="w-5 h-5" style={{ color: "#8B9EFF" }} />
+              Call Shop
+            </a>
+            <a
+              href="https://m.me/azerotech"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2.5 text-white px-8 py-4 rounded-xl transition-all hover:opacity-90"
+              style={{
+                background: "#0084FF",
+                fontWeight: 500,
+                fontSize: "1.05rem",
+              }}
+            >
+              <MessageCircle className="w-5 h-5" />
+              Messenger
+            </a>
+          </motion.div>
+
+          {/* Trust indicators */}
+          <motion.div
+            {...fadeUp(0.32)}
+            className="flex flex-wrap justify-center gap-6 mt-14 text-sm"
+            style={{ color: "#94A3B8" }}
+          >
+            {[
+              { Icon: Shield, text: "Quality Guaranteed" },
+              { Icon: Clock3, text: "Fast Turnaround" },
+              { Icon: Star, text: "Trusted by Locals" },
+            ].map(({ Icon, text }) => (
+              <div key={text} className="flex items-center gap-2">
+                <Icon className="w-4 h-4" style={{ color: "#4F6EF7" }} />
+                <span>{text}</span>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Bottom wave */}
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none">
+          <svg
+            viewBox="0 0 1440 64"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="none"
+            className="w-full h-16"
+          >
+            <path
+              d="M0 64L1440 64L1440 32C1200 0 240 64 0 32L0 64Z"
+              fill="#F7F8FF"
+            />
+          </svg>
         </div>
       </section>
 
-      {/* Quick Services Overview */}
-      <section className="bg-white py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            What We <span className="text-indigo-600">Offer</span>
-          </h2>
-          <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-            Complete solutions for all your device needs
-          </p>
+      {/* ─── SERVICES ─── */}
+      <section className="py-24 md:py-32" style={{ background: "#F7F8FF" }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fadeUpView()} className="text-center mb-14">
+            <span
+              className="inline-block text-sm mb-3 uppercase tracking-widest"
+              style={{ color: "#4F6EF7", fontWeight: 600 }}
+            >
+              What We Offer
+            </span>
+            <h2 className="text-[#0F172A] mb-4" style={{ fontWeight: 700 }}>
+              Our Main Services
+            </h2>
+            <p className="text-slate-500 max-w-md mx-auto">
+              From cracked screens to slow laptops — we handle it all at an
+              affordable price.
+            </p>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {services.map((service, idx) => (
-              <Link
-                key={idx}
-                href={
-                  service.title === "Phone Repair"
-                    ? "/services#phone"
-                    : service.title === "Laptop/Desktop"
-                      ? "/services#laptop"
-                      : "/accessories"
-                }
-              >
-                <div className="group bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl border border-gray-200 hover:border-indigo-400 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer h-full">
-                  <div className="text-6xl mb-4">{service.icon}</div>
-                  <h3 className="text-xl font-bold text-navy-dark mb-2">
-                    {service.title}
-                  </h3>
-                  <p className="text-gray-600">{service.description}</p>
-                  <div className="mt-4 text-indigo-600 font-semibold flex items-center gap-2">
-                    Learn More →
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                Icon: Smartphone,
+                title: "Phone Repair",
+                desc: "LCD replacement, charging fix, button repair, reprogram, reformat, and more.",
+                href: "/services#phone",
+                color: "#4F6EF7",
+                bg: "#EEF1FF",
+                delay: 0,
+              },
+              {
+                Icon: Monitor,
+                title: "Laptop & Desktop",
+                desc: "Full OS reformat and reinstallation for laptops and desktop computers.",
+                href: "/services#laptop",
+                color: "#06B6D4",
+                bg: "#ECFEFF",
+                delay: 0.08,
+              },
+              {
+                Icon: ShoppingBag,
+                title: "Accessories",
+                desc: "Quality chargers, cables, earphones, keyboards, mice, and more in-store.",
+                href: "/accessories",
+                color: "#8B5CF6",
+                bg: "#F5F3FF",
+                delay: 0.16,
+              },
+            ].map((item) => (
+              <motion.div key={item.title} {...fadeUpView(item.delay)}>
+                <Link href={item.href}>
+                  <div
+                    className="flex flex-col h-full bg-white rounded-2xl p-8 border border-slate-100 hover:border-transparent hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                    style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+                  >
+                    <div
+                      className="w-14 h-14 rounded-xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+                      style={{ background: item.bg }}
+                    >
+                      <item.Icon className="w-7 h-7" style={{ color: item.color }} />
+                    </div>
+                    <h3
+                      className="text-[#0F172A] mb-3"
+                      style={{ fontSize: "1.2rem", fontWeight: 700 }}
+                    >
+                      {item.title}
+                    </h3>
+                    <p className="text-slate-500 text-sm leading-relaxed flex-1 mb-6">
+                      {item.desc}
+                    </p>
+                    <span
+                      className="inline-flex items-center gap-1.5 text-sm transition-all group-hover:gap-2.5"
+                      style={{ color: item.color, fontWeight: 600 }}
+                    >
+                      Learn more <ArrowRight className="w-4 h-4" />
+                    </span>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Map Section */}
-      <section className="py-16 md:py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Visit Our <span className="text-indigo-600">Locations</span>
-          </h2>
-          <p className="text-center text-gray-600 mb-12">
-            We're conveniently located in Imus, Cavite
-          </p>
+      {/* ─── WHY AZEROTECH ─── */}
+      <section className="py-24 md:py-32" style={{ background: "#080B1A" }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fadeUpView()} className="text-center mb-14">
+            <span
+              className="inline-block text-sm mb-3 uppercase tracking-widest"
+              style={{ color: "#8B9EFF", fontWeight: 600 }}
+            >
+              Why AzeroTech
+            </span>
+            <h2 className="text-white" style={{ fontWeight: 700 }}>
+              Repairs You Can Trust
+            </h2>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div className="bg-white p-6 rounded-2xl border border-gray-200">
-              <h3 className="text-lg font-bold mb-2">Main Location</h3>
-              <p className="text-gray-600 mb-4">9WCC+FG Imus, Cavite</p>
-              <iframe
-                width="100%"
-                height="300"
-                style={{ border: 0, borderRadius: "12px" }}
-                loading="lazy"
-                allowFullScreen
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3863.4457556754836!2d120.93487762346017!3d14.328614385947328!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d51b90000001%3A0x1234567890!2sImus%2C%20Cavite!5e0!3m2!1sen!2sph!4v1234567890"
-              />
-            </div>
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 flex flex-col justify-between">
-              <div>
-                <h3 className="text-lg font-bold mb-4">Store Hours</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Monday - Sunday</span>
-                    <span className="font-semibold">9:00 AM - 6:00 PM</span>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Extended hours on holidays available upon request.
-                  </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                Icon: Zap,
+                title: "Fast Service",
+                desc: "Most repairs completed same day or within 24 hours.",
+                delay: 0,
+              },
+              {
+                Icon: Shield,
+                title: "Quality Parts",
+                desc: "We use quality replacement parts for long-lasting results.",
+                delay: 0.06,
+              },
+              {
+                Icon: Clock3,
+                title: "Open Daily",
+                desc: "We're open Monday to Sunday, 9AM to 7PM.",
+                delay: 0.12,
+              },
+              {
+                Icon: Star,
+                title: "Affordable",
+                desc: "Fair, transparent pricing with no hidden fees.",
+                delay: 0.18,
+              },
+            ].map((item) => (
+              <motion.div
+                key={item.title}
+                {...fadeUpView(item.delay)}
+                className="rounded-2xl p-7 transition-all duration-300 group"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-colors duration-300 group-hover:bg-[#4F6EF7]/25"
+                  style={{ background: "rgba(79,110,247,0.15)" }}
+                >
+                  <item.Icon className="w-6 h-6" style={{ color: "#8B9EFF" }} />
                 </div>
-              </div>
-              <div className="mt-8">
-                <h3 className="text-lg font-bold mb-4">Contact Us</h3>
-                <div className="space-y-3">
-                  <a
-                    href="tel:+639123456789"
-                    className="flex items-center gap-3 text-gray-700 hover:text-indigo-600 font-medium"
-                  >
-                    ☎️ +63 912 345 6789
-                  </a>
-                  <a
-                    href="https://m.me/azerotech"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 text-gray-700 hover:text-indigo-600 font-medium"
-                  >
-                    💬 Message on Messenger
-                  </a>
-                </div>
-              </div>
-            </div>
+                <h4
+                  className="text-white mb-2"
+                  style={{ fontWeight: 600, fontSize: "1rem" }}
+                >
+                  {item.title}
+                </h4>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  {item.desc}
+                </p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-navy-dark to-indigo-900 py-16 md:py-24 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Need Your Device Fixed?
-          </h2>
-          <p className="text-lg text-gray-300 mb-8">
-            Book an appointment now and get your devices back in working order.
-          </p>
-          <Link href="/book-appointment" className="btn btn-primary text-lg">
-            Schedule Now
-          </Link>
+      {/* ─── LOCATIONS ─── */}
+      <section className="py-24 md:py-32" style={{ background: "#F7F8FF" }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fadeUpView()} className="text-center mb-14">
+            <span
+              className="inline-block text-sm mb-3 uppercase tracking-widest"
+              style={{ color: "#4F6EF7", fontWeight: 600 }}
+            >
+              Find Us
+            </span>
+            <h2 className="text-[#0F172A]" style={{ fontWeight: 700 }}>
+              Visit Our Shop
+            </h2>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-5 gap-8 items-stretch">
+            {/* Location Cards */}
+            <div className="lg:col-span-2 flex flex-col gap-5">
+              <motion.div
+                {...fadeUpView(0)}
+                className="bg-white rounded-2xl p-7 border border-slate-100"
+                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="bg-[#EEF1FF] p-3 rounded-xl shrink-0">
+                    <MapPin className="w-6 h-6 text-[#4F6EF7]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3
+                        className="text-[#0F172A]"
+                        style={{ fontSize: "1.1rem", fontWeight: 700 }}
+                      >
+                        Main Branch
+                      </h3>
+                      <span
+                        className="text-xs px-2.5 py-0.5 rounded-full"
+                        style={{
+                          background: "#DCFCE7",
+                          color: "#15803D",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Open
+                      </span>
+                    </div>
+                    <p className="text-slate-500 text-sm leading-relaxed">
+                      9WCC+FG Imus, Cavite
+                    </p>
+                    <a
+                      href="https://maps.google.com/?q=9WCC+FG+Imus+Cavite"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-sm mt-3 hover:underline"
+                      style={{ color: "#4F6EF7", fontWeight: 500 }}
+                    >
+                      Open in Maps <ArrowRight className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                {...fadeUpView(0.08)}
+                className="bg-white rounded-2xl p-7 border border-slate-100"
+                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="bg-slate-100 p-3 rounded-xl shrink-0">
+                    <MapPin className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3
+                        className="text-[#0F172A]"
+                        style={{ fontSize: "1.1rem", fontWeight: 700 }}
+                      >
+                        Branch 2
+                      </h3>
+                      <span
+                        className="text-xs px-2.5 py-0.5 rounded-full"
+                        style={{
+                          background: "#F1F5F9",
+                          color: "#64748B",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Coming Soon
+                      </span>
+                    </div>
+                    <p className="text-slate-400 text-sm leading-relaxed">
+                      Address available locally. Not yet on Google Maps.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div {...fadeUpView(0.16)}>
+                <Link
+                  href="/contact"
+                  className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-white transition-all hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                    fontWeight: 600,
+                    boxShadow: "0 6px 24px rgba(79,110,247,0.25)",
+                  }}
+                >
+                  Get Directions & Contact <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.div>
+            </div>
+
+            {/* Map */}
+            <motion.div
+              {...fadeUpView(0.1)}
+              className="lg:col-span-3 bg-white rounded-2xl overflow-hidden border border-slate-100"
+              style={{
+                minHeight: "380px",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+              }}
+            >
+              <iframe
+                title="AzeroTech Location – Imus, Cavite"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3864.5528615367586!2d120.9388385!3d14.4262198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d2ba9ebef455%3A0x6e8a0028eeb3dc89!2sImus%2C%20Cavite!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+                width="100%"
+                height="100%"
+                style={{ border: 0, display: "block", minHeight: "380px" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </motion.div>
+          </div>
         </div>
       </section>
-    </>
+
+      {/* ─── CTA ─── */}
+      <section
+        className="py-24 text-center"
+        style={{
+          background: "linear-gradient(135deg, #080B1A 0%, #0F1535 100%)",
+        }}
+      >
+        <div className="max-w-2xl mx-auto px-4">
+          <motion.h2
+            {...fadeUpView()}
+            className="text-white mb-4"
+            style={{ fontWeight: 700 }}
+          >
+            Ready to Fix Your Device?
+          </motion.h2>
+          <motion.p {...fadeUpView(0.08)} className="text-slate-400 mb-8">
+            Book your appointment now — it only takes a minute.
+          </motion.p>
+          <motion.div {...fadeUpView(0.16)}>
+            <Link
+              href="/book-appointment"
+              className="inline-flex items-center gap-2.5 text-white px-8 py-4 rounded-xl transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                fontWeight: 600,
+                fontSize: "1.05rem",
+                boxShadow: "0 8px 32px rgba(79,110,247,0.35)",
+              }}
+            >
+              Book an Appointment <ArrowRight className="w-5 h-5" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+    </div>
   );
 }
