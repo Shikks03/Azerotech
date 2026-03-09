@@ -153,12 +153,32 @@ export default function AdminPage() {
   };
 
   const updateReservationStatus = (id: string, status: EntryStatus) => {
+    const reservation = reservations.find((r) => r.id === id);
     setReservations((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
     fetch(`/api/reservations/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+    if (reservation && reservation.status !== status) {
+      if (status === "Completed") {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.name === reservation.productName
+              ? { ...p, stock: Math.max(0, (p.stock ?? 0) - 1) }
+              : p
+          )
+        );
+      } else if (reservation.status === "Completed") {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.name === reservation.productName
+              ? { ...p, stock: (p.stock ?? 0) + 1 }
+              : p
+          )
+        );
+      }
+    }
   };
 
   const updateStock = (productId: number, newStock: number) => {
