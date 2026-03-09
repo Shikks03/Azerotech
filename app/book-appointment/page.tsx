@@ -1,6 +1,23 @@
 "use client";
 
 import { useState } from "react";
+
+type EntryStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
+
+interface AppointmentEntry {
+  id: string;
+  type: "appointment";
+  submittedAt: string;
+  status: EntryStatus;
+  service: string;
+  date: string;
+  time: string;
+  name: string;
+  phone: string;
+  brand: string;
+  deviceType: string;
+  problem?: string;
+}
 import Link from "next/link";
 import { motion } from "motion/react";
 import {
@@ -137,6 +154,24 @@ export default function BookAppointment() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const newEntry: AppointmentEntry = {
+      id: crypto.randomUUID(),
+      type: "appointment",
+      submittedAt: new Date().toISOString(),
+      status: "Pending",
+      service: formData.service,
+      date: formData.date,
+      time: formData.time,
+      name: formData.name,
+      phone: formData.phone,
+      brand: formData.brand,
+      deviceType: formData.deviceType,
+      ...(formData.problem ? { problem: formData.problem } : {}),
+    };
+    const existing: AppointmentEntry[] = JSON.parse(
+      localStorage.getItem("azerotech_appointments") ?? "[]"
+    );
+    localStorage.setItem("azerotech_appointments", JSON.stringify([...existing, newEntry]));
     setConfirmed(true);
   };
 

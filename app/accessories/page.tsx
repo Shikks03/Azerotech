@@ -1,6 +1,21 @@
 "use client";
 
 import { useState } from "react";
+
+type EntryStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
+
+interface ReservationEntry {
+  id: string;
+  type: "reservation";
+  submittedAt: string;
+  status: EntryStatus;
+  name: string;
+  phone: string;
+  pickupDate: string;
+  pickupTime: string;
+  productName: string;
+  productPrice: number;
+}
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
@@ -147,7 +162,23 @@ export default function Accessories() {
 
   const handleSubmitReservation = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit || !reservingProduct) return;
+    const newEntry: ReservationEntry = {
+      id: crypto.randomUUID(),
+      type: "reservation",
+      submittedAt: new Date().toISOString(),
+      status: "Pending",
+      name: formData.name,
+      phone: formData.phone,
+      pickupDate: formData.pickupDate,
+      pickupTime: formData.pickupTime,
+      productName: reservingProduct.name,
+      productPrice: Number(reservingProduct.price.replace(/[₱,]/g, "")),
+    };
+    const existing: ReservationEntry[] = JSON.parse(
+      localStorage.getItem("azerotech_reservations") ?? "[]"
+    );
+    localStorage.setItem("azerotech_reservations", JSON.stringify([...existing, newEntry]));
     setReserved(true);
   };
 
