@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type EntryStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
 
@@ -44,75 +44,22 @@ const fadeUpView = (delay = 0) => ({
 
 const isPhoneValid = (v: string) => /^09\d{9}$/.test(v);
 
-const products = [
-  {
-    id: 1,
-    name: "Samsung Fast Charger",
-    price: "₱450",
-    category: "Chargers",
-    image: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-  {
-    id: 2,
-    name: "Type-C Data Cable",
-    price: "₱250",
-    category: "Cables",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-  {
-    id: 3,
-    name: "32GB Memory Card",
-    price: "₱350",
-    category: "Memory",
-    image: "https://images.unsplash.com/photo-1591488320449-011701bb6704?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-  {
-    id: 4,
-    name: "Wireless Earphones",
-    price: "₱1,200",
-    category: "Audio",
-    image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-  {
-    id: 5,
-    name: "Mechanical Keyboard",
-    price: "₱2,500",
-    category: "Peripherals",
-    image: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-  {
-    id: 6,
-    name: "USB Mouse",
-    price: "₱450",
-    category: "Peripherals",
-    image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-  {
-    id: 7,
-    name: "Tempered Glass",
-    price: "₱300",
-    category: "Protection",
-    image: "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-  {
-    id: 8,
-    name: "iPhone Charger",
-    price: "₱550",
-    category: "Chargers",
-    image: "https://images.unsplash.com/photo-1603189343302-e603f7add05a?w=600&h=400&fit=crop&auto=format&q=80",
-  },
-];
-
-const categories = ["All", "Chargers", "Cables", "Memory", "Audio", "Peripherals", "Protection"];
+interface Product {
+  id: number;
+  name: string;
+  price: string;
+  category: string;
+  image: string;
+}
 
 const pickupTimes = [
   "9:00 AM", "10:00 AM", "11:00 AM",
   "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM",
 ];
 
-type Product = typeof products[number];
-
 export default function Accessories() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [reservingProduct, setReservingProduct] = useState<Product | null>(null);
   const [phoneError, setPhoneError] = useState("");
@@ -124,6 +71,20 @@ export default function Accessories() {
   });
   const [reserved, setReserved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data) => {
+        setProducts(data);
+        setLoadingProducts(false);
+      });
+  }, []);
+
+  const categories = [
+    "All",
+    ...Array.from(new Set(products.map((p) => p.category))),
+  ];
 
   const filteredProducts =
     selectedCategory === "All"
@@ -310,7 +271,21 @@ export default function Accessories() {
       {/* ─── PRODUCTS GRID ─── */}
       <section className="py-12 md:py-16" style={{ background: "#F7F8FF" }}>
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
-          {filteredProducts.length === 0 ? (
+          {loadingProducts ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden border border-slate-100 animate-pulse">
+                  <div className="w-full h-48 bg-slate-200" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-3 w-16 bg-slate-200 rounded-full" />
+                    <div className="h-4 w-3/4 bg-slate-200 rounded-full" />
+                    <div className="h-5 w-1/3 bg-slate-200 rounded-full" />
+                    <div className="h-10 bg-slate-200 rounded-xl" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-slate-400">
               <ShoppingBag className="w-12 h-12 mb-4 opacity-30" />
               <p className="text-lg font-semibold">No products in this category.</p>
@@ -369,6 +344,7 @@ export default function Accessories() {
       </section>
 
       {/* ─── CTA ─── */}
+
       <section
         className="py-36 md:py-44"
         style={{ background: "linear-gradient(135deg, #080B1A 0%, #0F1535 100%)" }}
