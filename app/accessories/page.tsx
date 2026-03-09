@@ -50,6 +50,7 @@ interface Product {
   price: string;
   category: string;
   image: string;
+  stock?: number;
 }
 
 const pickupTimes = [
@@ -292,52 +293,67 @@ export default function Accessories() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product, idx) => (
-                <motion.div
-                  key={product.id}
-                  {...fadeUpView(idx * 0.05)}
-                  className="flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 group hover:border-transparent hover:shadow-xl transition-all duration-300"
-                  style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}
-                >
-                  {/* Product Image */}
-                  <div className="relative w-full h-48 overflow-hidden bg-slate-50">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      unoptimized
-                    />
-                  </div>
+              {filteredProducts.map((product, idx) => {
+                const outOfStock = product.stock === 0;
+                return (
+                  <motion.div
+                    key={product.id}
+                    {...fadeUpView(idx * 0.05)}
+                    className="flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 group hover:border-transparent hover:shadow-xl transition-all duration-300"
+                    style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)", opacity: outOfStock ? 0.75 : 1 }}
+                  >
+                    {/* Product Image */}
+                    <div className="relative w-full h-48 overflow-hidden bg-slate-50">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className={`object-cover transition-transform duration-500 group-hover:scale-105${outOfStock ? " grayscale" : ""}`}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        unoptimized
+                      />
+                      {outOfStock && (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.35)" }}>
+                          <span
+                            className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-white"
+                            style={{ background: "rgba(239,68,68,0.85)" }}
+                          >
+                            Out of Stock
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Card Body */}
-                  <div className="flex flex-col flex-1 p-5">
-                    <span
-                      className="text-xs font-semibold uppercase tracking-widest mb-2"
-                      style={{ color: "#8B5CF6" }}
-                    >
-                      {product.category}
-                    </span>
-                    <p className="text-[#0F172A] font-bold text-base leading-snug mb-1 flex-1">
-                      {product.name}
-                    </p>
-                    <p className="text-xl font-bold mb-4" style={{ color: "#4F6EF7" }}>
-                      {product.price}
-                    </p>
-                    <button
-                      onClick={() => setReservingProduct(product)}
-                      className="flex items-center justify-center gap-2 w-full text-white py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
-                      style={{
-                        background: "linear-gradient(135deg, #8B5CF6, #A78BFA)",
-                        boxShadow: "0 4px 14px rgba(139,92,246,0.3)",
-                      }}
-                    >
-                      Reserve for Pickup <ArrowRight className="w-4 h-4 shrink-0" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                    {/* Card Body */}
+                    <div className="flex flex-col flex-1 p-5">
+                      <span
+                        className="text-xs font-semibold uppercase tracking-widest mb-2"
+                        style={{ color: "#8B5CF6" }}
+                      >
+                        {product.category}
+                      </span>
+                      <p className="text-[#0F172A] font-bold text-base leading-snug mb-1 flex-1">
+                        {product.name}
+                      </p>
+                      <p className="text-xl font-bold mb-4" style={{ color: outOfStock ? "#94A3B8" : "#4F6EF7" }}>
+                        {product.price}
+                      </p>
+                      <button
+                        onClick={() => !outOfStock && setReservingProduct(product)}
+                        disabled={outOfStock}
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all"
+                        style={
+                          outOfStock
+                            ? { background: "#F1F5F9", color: "#94A3B8", cursor: "not-allowed" }
+                            : { background: "linear-gradient(135deg, #8B5CF6, #A78BFA)", color: "white", boxShadow: "0 4px 14px rgba(139,92,246,0.3)" }
+                        }
+                      >
+                        {outOfStock ? "Out of Stock" : <><span>Reserve for Pickup</span> <ArrowRight className="w-4 h-4 shrink-0" /></>}
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
