@@ -104,6 +104,7 @@ export default function BookAppointment() {
   });
   const [phoneError, setPhoneError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -152,8 +153,9 @@ export default function BookAppointment() {
   const handleNext = () => { if (step < 4) setStep(step + 1); };
   const handlePrev = () => { if (step > 1) setStep(step - 1); };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     const newEntry: AppointmentEntry = {
       id: crypto.randomUUID(),
       type: "appointment",
@@ -168,10 +170,12 @@ export default function BookAppointment() {
       deviceType: formData.deviceType,
       ...(formData.problem ? { problem: formData.problem } : {}),
     };
-    const existing: AppointmentEntry[] = JSON.parse(
-      localStorage.getItem("azerotech_appointments") ?? "[]"
-    );
-    localStorage.setItem("azerotech_appointments", JSON.stringify([...existing, newEntry]));
+    await fetch("/api/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newEntry),
+    });
+    setSubmitting(false);
     setConfirmed(true);
   };
 
@@ -615,13 +619,14 @@ export default function BookAppointment() {
 
                   <button
                     type="submit"
-                    className="w-full flex items-center justify-center gap-2.5 text-white py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90"
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-2.5 text-white py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{
                       background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
                       boxShadow: "0 8px 24px rgba(79,110,247,0.35)",
                     }}
                   >
-                    Confirm Appointment <ArrowRight className="w-5 h-5 shrink-0" />
+                    {submitting ? "Submitting…" : <>Confirm Appointment <ArrowRight className="w-5 h-5 shrink-0" /></>}
                   </button>
                 </div>
               )}

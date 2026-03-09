@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm install motion)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(mkdir:*)"
     ]
   },
   "enabledPlugins": {

@@ -96,20 +96,15 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    const appts: AppointmentEntry[] = JSON.parse(
-      localStorage.getItem("azerotech_appointments") ?? "[]"
-    );
-    const resrvs: ReservationEntry[] = JSON.parse(
-      localStorage.getItem("azerotech_reservations") ?? "[]"
-    );
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setAppointments(
-      [...appts].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-    );
-    setReservations(
-      [...resrvs].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-    );
-    /* eslint-enable react-hooks/set-state-in-effect */
+    Promise.all([
+      fetch("/api/appointments").then((r) => r.json()),
+      fetch("/api/reservations").then((r) => r.json()),
+    ]).then(([appts, resrvs]) => {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setAppointments(appts as AppointmentEntry[]);
+      setReservations(resrvs as ReservationEntry[]);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    });
   }, [isAuthenticated, refreshKey]);
 
   const loadData = () => setRefreshKey((k) => k + 1);
@@ -133,15 +128,21 @@ export default function AdminPage() {
   };
 
   const updateAppointmentStatus = (id: string, status: EntryStatus) => {
-    const updated = appointments.map((e) => (e.id === id ? { ...e, status } : e));
-    setAppointments(updated);
-    localStorage.setItem("azerotech_appointments", JSON.stringify(updated));
+    setAppointments((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
+    fetch(`/api/appointments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
   };
 
   const updateReservationStatus = (id: string, status: EntryStatus) => {
-    const updated = reservations.map((e) => (e.id === id ? { ...e, status } : e));
-    setReservations(updated);
-    localStorage.setItem("azerotech_reservations", JSON.stringify(updated));
+    setReservations((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
+    fetch(`/api/reservations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
   };
 
   const pendingCount =

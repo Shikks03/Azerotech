@@ -123,6 +123,7 @@ export default function Accessories() {
     pickupTime: "",
   });
   const [reserved, setReserved] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const filteredProducts =
     selectedCategory === "All"
@@ -160,9 +161,10 @@ export default function Accessories() {
     !!formData.pickupDate &&
     !!formData.pickupTime;
 
-  const handleSubmitReservation = (e: React.FormEvent) => {
+  const handleSubmitReservation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit || !reservingProduct) return;
+    setSubmitting(true);
     const newEntry: ReservationEntry = {
       id: crypto.randomUUID(),
       type: "reservation",
@@ -175,10 +177,12 @@ export default function Accessories() {
       productName: reservingProduct.name,
       productPrice: Number(reservingProduct.price.replace(/[₱,]/g, "")),
     };
-    const existing: ReservationEntry[] = JSON.parse(
-      localStorage.getItem("azerotech_reservations") ?? "[]"
-    );
-    localStorage.setItem("azerotech_reservations", JSON.stringify([...existing, newEntry]));
+    await fetch("/api/reservations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newEntry),
+    });
+    setSubmitting(false);
     setReserved(true);
   };
 
@@ -565,14 +569,14 @@ export default function Accessories() {
                       </button>
                       <button
                         type="submit"
-                        disabled={!canSubmit}
+                        disabled={!canSubmit || submitting}
                         className="flex-1 flex items-center justify-center gap-2 text-white py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{
                           background: "linear-gradient(135deg, #8B5CF6, #A78BFA)",
                           boxShadow: canSubmit ? "0 4px 14px rgba(139,92,246,0.3)" : "none",
                         }}
                       >
-                        Confirm Reservation <ArrowRight className="w-4 h-4 shrink-0" />
+                        {submitting ? "Submitting…" : <>Confirm Reservation <ArrowRight className="w-4 h-4 shrink-0" /></>}
                       </button>
                     </div>
                   </form>
