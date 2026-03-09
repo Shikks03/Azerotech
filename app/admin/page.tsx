@@ -96,8 +96,10 @@ function formatSubmittedAt(iso: string) {
 }
 
 export default function AdminPage() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("azerotech_admin_authed") === "true";
+  });
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState(false);
   const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory">("appointments");
@@ -107,12 +109,6 @@ export default function AdminPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   // per-product manual stock input values
   const [stockInputs, setStockInputs] = useState<Record<number, string>>({});
-
-  useEffect(() => {
-    setIsLoaded(true);
-    const authed = sessionStorage.getItem("azerotech_admin_authed");
-    if (authed === "true") setIsAuthenticated(true);
-  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -183,7 +179,6 @@ export default function AdminPage() {
 
   const outOfStockCount = products.filter((p) => p.stock === 0).length;
 
-  if (!isLoaded) return null;
 
   /* ─── LOGIN SCREEN ─── */
   if (!isAuthenticated) {
