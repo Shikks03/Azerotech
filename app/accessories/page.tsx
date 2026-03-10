@@ -117,6 +117,12 @@ export default function Accessories() {
     return d.toISOString().split("T")[0];
   };
 
+  const getMaxDateReservation = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    return d.toISOString().split("T")[0];
+  };
+
   const canSubmit =
     !!formData.name &&
     isPhoneValid(formData.phone) &&
@@ -531,6 +537,7 @@ export default function Accessories() {
                           value={formData.pickupDate}
                           onChange={handleInputChange}
                           min={getMinDate()}
+                          max={getMaxDateReservation()}
                           className="w-full px-3 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] text-sm"
                           onFocus={(e) => (e.target.style.borderColor = "#8B5CF6")}
                           onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}

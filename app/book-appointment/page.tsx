@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type EntryStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
 
@@ -31,6 +31,8 @@ import {
   Phone,
   MessageCircle,
   Copy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
@@ -108,6 +110,12 @@ export default function BookAppointment() {
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmedId, setConfirmedId] = useState("");
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => {
+    const d = new Date();
+    return { month: d.getMonth(), year: d.getFullYear() };
+  });
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -136,8 +144,62 @@ export default function BookAppointment() {
 
   const getMaxDate = () => {
     const d = new Date();
-    d.setDate(d.getDate() + 14);
+    d.setMonth(d.getMonth() + 2);
     return d.toISOString().split("T")[0];
+  };
+
+  const handleDateSelect = (isoDate: string) => {
+    setFormData((p) => ({ ...p, date: isoDate, time: "" }));
+    setBookedSlots([]);
+    setSlotsLoading(true);
+    fetch(`/api/appointments/booked-slots?date=${isoDate}`)
+      .then((r) => r.json())
+      .then(({ bookedTimes }) => setBookedSlots(bookedTimes))
+      .finally(() => setSlotsLoading(false));
+  };
+
+  const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December",
+  ];
+
+  const getCalendarDays = () => {
+    const firstDay = new Date(calMonth.year, calMonth.month, 1).getDay();
+    const daysInMonth = new Date(calMonth.year, calMonth.month + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    return cells;
+  };
+
+  const canGoPrevMonth = () => {
+    const today = new Date();
+    return (
+      calMonth.year > today.getFullYear() ||
+      (calMonth.year === today.getFullYear() && calMonth.month > today.getMonth())
+    );
+  };
+
+  const canGoNextMonth = () => {
+    const nextM = calMonth.month === 11 ? 0 : calMonth.month + 1;
+    const nextY = calMonth.month === 11 ? calMonth.year + 1 : calMonth.year;
+    const firstOfNext = new Date(nextY, nextM, 1);
+    const maxD = new Date(`${getMaxDate()}T00:00:00`);
+    return firstOfNext <= maxD;
+  };
+
+  const prevMonth = () => {
+    if (!canGoPrevMonth()) return;
+    setCalMonth((c) =>
+      c.month === 0 ? { month: 11, year: c.year - 1 } : { month: c.month - 1, year: c.year }
+    );
+  };
+
+  const nextMonth = () => {
+    if (!canGoNextMonth()) return;
+    setCalMonth((c) =>
+      c.month === 11 ? { month: 0, year: c.year + 1 } : { month: c.month + 1, year: c.year }
+    );
   };
 
   const canProceed = () => {
@@ -152,6 +214,10 @@ export default function BookAppointment() {
       );
     return true;
   };
+
+  useEffect(() => {
+    if (confirmed) window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [confirmed]);
 
   const handleNext = () => { if (step < 4) setStep(step + 1); };
   const handlePrev = () => { if (step > 1) setStep(step - 1); };
@@ -454,46 +520,128 @@ export default function BookAppointment() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                    <label className="block text-sm font-semibold text-[#0F172A] mb-3">
                       <CalendarDays className="inline w-4 h-4 mr-1.5 mb-0.5" style={{ color: "#4F6EF7" }} />
                       Select Date
                     </label>
-                    <input
-                      type="date"
-                      name="date"
-                      value={formData.date}
-                      onChange={handleInputChange}
-                      min={getMinDate()}
-                      max={getMaxDate()}
-                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A]"
-                      style={{ fontSize: "1rem" }}
-                      onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
-                      onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
-                    />
+
+                    {/* Calendar */}
+                    <div className="rounded-2xl overflow-hidden border-2" style={{ borderColor: "#E2E8F0" }}>
+
+                      {/* Month header */}
+                      <div
+                        className="flex items-center justify-between px-4 py-3"
+                        style={{ background: "#F7F8FF", borderBottom: "1px solid #E2E8F0" }}
+                      >
+                        <button
+                          type="button"
+                          onClick={prevMonth}
+                          disabled={!canGoPrevMonth()}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="font-bold text-[#0F172A] text-sm">
+                          {monthNames[calMonth.month]} {calMonth.year}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={nextMonth}
+                          disabled={!canGoNextMonth()}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Day-of-week headers */}
+                      <div className="grid grid-cols-7 px-3 pt-3 pb-1">
+                        {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
+                          <div key={d} className="text-center text-xs font-semibold text-slate-400 py-1">
+                            {d}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Day cells */}
+                      <div className="grid grid-cols-7 gap-0.5 px-3 pb-3">
+                        {getCalendarDays().map((day, i) => {
+                          if (day === null) return <div key={`e-${i}`} />;
+                          const mm = String(calMonth.month + 1).padStart(2, "0");
+                          const dd = String(day).padStart(2, "0");
+                          const isoDate = `${calMonth.year}-${mm}-${dd}`;
+                          const date = new Date(`${isoDate}T00:00:00`);
+                          const minD = new Date(`${getMinDate()}T00:00:00`);
+                          const maxD = new Date(`${getMaxDate()}T00:00:00`);
+                          const disabled = date < minD || date > maxD;
+                          const selected = formData.date === isoDate;
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => handleDateSelect(isoDate)}
+                              className="aspect-square rounded-xl text-sm font-medium flex items-center justify-center transition-all duration-150 hover:bg-indigo-50"
+                              style={
+                                selected
+                                  ? {
+                                      background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                                      color: "white",
+                                      boxShadow: "0 4px 12px rgba(79,110,247,0.35)",
+                                    }
+                                  : disabled
+                                  ? { color: "#D1D5DB", cursor: "not-allowed" }
+                                  : { color: "#0F172A" }
+                              }
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {formData.date ? (
+                      <p className="text-xs mt-2 font-medium" style={{ color: "#4F6EF7" }}>
+                        Selected: {formatDate(formData.date)}
+                      </p>
+                    ) : (
+                      <p className="text-xs mt-2 text-slate-400">
+                        Pick a date — up to 2 months from today
+                      </p>
+                    )}
                   </div>
 
                   {formData.date && (
                     <div>
-                      <label className="block text-sm font-semibold text-[#0F172A] mb-3">
-                        <Clock className="inline w-4 h-4 mr-1.5 mb-0.5" style={{ color: "#4F6EF7" }} />
+                      <label className="block text-sm font-semibold text-[#0F172A] mb-3 flex items-center gap-2">
+                        <Clock className="inline w-4 h-4" style={{ color: "#4F6EF7" }} />
                         Select Time Slot
+                        {slotsLoading && (
+                          <span className="text-xs font-normal text-slate-400">Loading availability…</span>
+                        )}
                       </label>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                      <div className={`grid grid-cols-3 sm:grid-cols-4 gap-3 transition-opacity ${slotsLoading ? "opacity-50 pointer-events-none" : ""}`}>
                         {timeSlots.map((slot) => {
                           const selected = formData.time === slot;
+                          const booked = bookedSlots.includes(slot);
                           return (
                             <button
                               key={slot}
                               type="button"
+                              disabled={booked}
                               onClick={() => setFormData((p) => ({ ...p, time: slot }))}
                               className="py-2.5 rounded-xl text-sm font-semibold text-center transition-all duration-200 border-2"
                               style={
-                                selected
+                                booked
+                                  ? { background: "#F1F5F9", color: "#94A3B8", borderColor: "#E2E8F0", cursor: "not-allowed" }
+                                  : selected
                                   ? { background: "linear-gradient(135deg, #4F6EF7, #6B84FF)", color: "white", borderColor: "transparent", boxShadow: "0 4px 12px rgba(79,110,247,0.3)" }
                                   : { background: "#F7F8FF", color: "#475569", borderColor: "#E2E8F0" }
                               }
                             >
-                              {slot}
+                              <span className="block leading-tight">{slot}</span>
+                              {booked && <span className="block text-xs font-medium mt-0.5" style={{ color: "#CBD5E1" }}>Booked</span>}
                             </button>
                           );
                         })}
@@ -646,17 +794,26 @@ export default function BookAppointment() {
                     ))}
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full flex items-center justify-center gap-2.5 text-white py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{
-                      background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
-                      boxShadow: "0 8px 24px rgba(79,110,247,0.35)",
-                    }}
-                  >
-                    {submitting ? "Submitting…" : <>Confirm Appointment <ArrowRight className="w-5 h-5 shrink-0" /></>}
-                  </button>
+                  <div className="flex items-center justify-between gap-3 mt-2">
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm border-2 border-slate-200 text-slate-600 transition-all hover:bg-slate-50"
+                    >
+                      <ArrowLeft className="w-4 h-4 shrink-0" /> Go Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex items-center gap-2.5 text-white px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{
+                        background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                        boxShadow: "0 8px 24px rgba(79,110,247,0.35)",
+                      }}
+                    >
+                      {submitting ? "Submitting…" : <>Confirm Appointment <ArrowRight className="w-5 h-5 shrink-0" /></>}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -685,16 +842,6 @@ export default function BookAppointment() {
                     Next <ArrowRight className="w-4 h-4 shrink-0" />
                   </button>
                 </div>
-              )}
-
-              {step === 4 && (
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="flex items-center gap-2 mt-4 px-4 py-2.5 rounded-xl font-semibold text-sm border-2 border-slate-200 text-slate-600 transition-all hover:bg-slate-50"
-                >
-                  <ArrowLeft className="w-4 h-4 shrink-0" /> Go Back
-                </button>
               )}
 
             </form>

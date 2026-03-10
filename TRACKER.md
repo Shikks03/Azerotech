@@ -17,6 +17,8 @@ Track new features, bugs, and problems for the AzeroTech project.
 | 4 | Out-of-stock display | Accessories page reads `stock` from MongoDB. Products with 0 stock show a greyscale image with an "Out of Stock" overlay and a disabled Reserve button. |
 | 5 | Product list connected to MongoDB | Accessories product grid is fetched from `/api/products` (MongoDB) instead of a hardcoded array. Categories are derived dynamically from the database. Includes animated skeleton loaders while fetching. |
 | 6 | Skeleton loaders for accessories | Animated placeholder cards shown while product data loads from the database instead of a blank grid. |
+| 8 | Admin loading state | Spinner + "Fetching data…" screen shown while the admin panel is loading appointments, reservations, and products from the database. |
+| 9 | Admin appointment search by name | Appointment search bar now matches against both Appointment ID and customer name. |
 
 ---
 
@@ -45,8 +47,9 @@ Track new features, bugs, and problems for the AzeroTech project.
 
 | # | Bug | Description | Status |
 |---|-----|-------------|--------|
-| 1 | Header nav text invisible on scroll | Nav link text is black and becomes invisible against the dark background when the user scrolls down | `Todo` |
+| 1 | Header nav text invisible on scroll | Nav link text is black and becomes invisible against the dark background when the user scrolls down | `Done` |
 | 2 | Logo and title overlap on small screens | "AzeroTech" title text overlaps with the logo in portrait/small screen orientations due to insufficient spacing | `Todo` |
+| 3 | Admin panel hydration mismatch | `isAuthenticated` was initialized using `typeof window !== "undefined"` causing server/client HTML mismatch. Fixed by always starting with `false` and reading `sessionStorage` in a `useEffect`. | `Done` |
 
 ---
 

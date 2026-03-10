@@ -100,9 +100,11 @@ function formatSubmittedAt(iso: string) {
 }
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => typeof window !== "undefined" && sessionStorage.getItem("azerotech_admin_authed") === "true"
-  );
+  const initiallyAuthed =
+    typeof window !== "undefined" &&
+    sessionStorage.getItem("azerotech_admin_authed") === "true";
+
+  const [isAuthenticated, setIsAuthenticated] = useState(initiallyAuthed);
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState(false);
   const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory">("appointments");
@@ -116,6 +118,7 @@ export default function AdminPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(initiallyAuthed);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -127,6 +130,7 @@ export default function AdminPage() {
       setAppointments(appts as AppointmentEntry[]);
       setReservations(resrvs as ReservationEntry[]);
       setProducts(prods as Product[]);
+      setLoading(false);
     });
   }, [isAuthenticated, refreshKey]);
 
@@ -136,6 +140,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (passwordInput === ADMIN_PASSWORD) {
       sessionStorage.setItem("azerotech_admin_authed", "true");
+      setLoading(true);
       setIsAuthenticated(true);
       setLoginError(false);
     } else {
@@ -300,6 +305,24 @@ export default function AdminPage() {
     );
   }
 
+  /* ─── LOADING ─── */
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ background: "#080B1A" }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-10 h-10 rounded-full border-4 border-t-transparent"
+          style={{ borderColor: "#4F6EF7", borderTopColor: "transparent" }}
+        />
+        <p className="text-slate-400 text-sm font-medium">Fetching data…</p>
+      </div>
+    );
+  }
+
   /* ─── DASHBOARD ─── */
   return (
     <div className="min-h-screen" style={{ background: "#080B1A" }}>
@@ -415,7 +438,7 @@ export default function AdminPage() {
                 <div className="flex flex-col gap-4">
                   <input
                     type="text"
-                    placeholder="Search by Appointment ID (e.g. AZT-260310-0042)"
+                    placeholder="Search by Appointment ID or name…"
                     value={apptSearch}
                     onChange={(e) => setApptSearch(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl text-sm font-medium focus:outline-none"
@@ -427,9 +450,13 @@ export default function AdminPage() {
                   />
                   {(() => {
                     const filtered = apptSearch.trim()
-                      ? appointments.filter((a) =>
-                          (a.appointmentId ?? "").toLowerCase().includes(apptSearch.trim().toLowerCase())
-                        )
+                      ? appointments.filter((a) => {
+                          const q = apptSearch.trim().toLowerCase();
+                          return (
+                            (a.appointmentId ?? "").toLowerCase().includes(q) ||
+                            a.name.toLowerCase().includes(q)
+                          );
+                        })
                       : appointments;
                     if (filtered.length === 0) {
                       return (
