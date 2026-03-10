@@ -9,15 +9,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { status } = await req.json();
+  const body = await req.json();
   const client = await clientPromise;
   const db = client.db(DB);
 
   const reservation = await db.collection(COL).findOne({ id });
-  await db.collection(COL).updateOne({ id }, { $set: { status } });
+  await db.collection(COL).updateOne({ id }, { $set: body });
 
-  if (reservation && reservation.status !== status) {
-    if (status === "Completed") {
+  if (body.status && reservation && reservation.status !== body.status) {
+    if (body.status === "Completed") {
       await db.collection("products").updateOne(
         { name: reservation.productName, stock: { $gt: 0 } },
         { $inc: { stock: -1 } }

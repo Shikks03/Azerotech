@@ -9,8 +9,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { status } = await req.json();
+  const body = await req.json();
   const client = await clientPromise;
-  await client.db(DB).collection(COL).updateOne({ id }, { $set: { status } });
+  await client.db(DB).collection(COL).updateOne({ id }, { $set: body });
   return NextResponse.json({ ok: true });
 }

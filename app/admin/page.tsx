@@ -19,7 +19,29 @@ import {
   Pencil,
   Trash2,
   X,
+  ArrowUpDown,
 } from "lucide-react";
+
+const TIME_SLOTS = [
+  "9:00 AM",  "9:30 AM",
+  "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM",
+  "1:00 PM",  "1:30 PM",
+  "2:00 PM",  "2:30 PM",
+  "3:00 PM",  "3:30 PM",
+  "4:00 PM",  "4:30 PM",
+  "5:00 PM",  "5:30 PM",
+];
+
+function parseTimeToMinutes(t: string): number {
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return 0;
+  let h = parseInt(m[1]);
+  const min = parseInt(m[2]);
+  if (m[3].toUpperCase() === "PM" && h !== 12) h += 12;
+  if (m[3].toUpperCase() === "AM" && h === 12) h = 0;
+  return h * 60 + min;
+}
 
 const ADMIN_PASSWORD = "admin123";
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
@@ -113,6 +135,10 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [apptSearch, setApptSearch] = useState("");
+  const [apptSort, setApptSort] = useState<"date-asc" | "date-desc" | "name" | "Pending" | "Confirmed" | "Completed" | "Cancelled">("date-asc");
+  const [resSort, setResSort] = useState<"date-asc" | "date-desc" | "name" | "Pending" | "Confirmed" | "Completed" | "Cancelled">("date-asc");
+  const [editingRes, setEditingRes] = useState<ReservationEntry | null>(null);
+  const [editingAppt, setEditingAppt] = useState<AppointmentEntry | null>(null);
   // per-product manual stock input values
   const [stockInputs, setStockInputs] = useState<Record<number, string>>({});
   const [showAddModal, setShowAddModal] = useState(false);
@@ -161,6 +187,26 @@ export default function AdminPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+    });
+  };
+
+  const updateReservationFull = async (id: string, data: Partial<ReservationEntry>) => {
+    setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, ...data } : r)));
+    setEditingRes(null);
+    await fetch(`/api/reservations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  };
+
+  const updateAppointmentFull = async (id: string, data: Partial<AppointmentEntry>) => {
+    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, ...data } : a)));
+    setEditingAppt(null);
+    await fetch(`/api/appointments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     });
   };
 
@@ -436,18 +482,43 @@ export default function AdminPage() {
                 <EmptyState label="appointments" detail="Appointments submitted from the booking form will appear here." />
               ) : (
                 <div className="flex flex-col gap-4">
-                  <input
-                    type="text"
-                    placeholder="Search by Appointment ID or name…"
-                    value={apptSearch}
-                    onChange={(e) => setApptSearch(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl text-sm font-medium focus:outline-none"
-                    style={{
-                      background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      color: "white",
-                    }}
-                  />
+                  {/* Search + Sort */}
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="Search by Appointment ID or name…"
+                      value={apptSearch}
+                      onChange={(e) => setApptSearch(e.target.value)}
+                      className="flex-1 px-4 py-3 rounded-xl text-sm font-medium focus:outline-none"
+                      style={{
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        color: "white",
+                      }}
+                    />
+                    <div className="relative flex items-center">
+                      <ArrowUpDown className="absolute left-3 w-3.5 h-3.5 pointer-events-none" style={{ color: "#64748B" }} />
+                      <select
+                        value={apptSort}
+                        onChange={(e) => setApptSort(e.target.value as typeof apptSort)}
+                        className="pl-8 pr-4 py-3 rounded-xl text-sm font-medium focus:outline-none cursor-pointer appearance-none"
+                        style={{
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          color: "#94A3B8",
+                        }}
+                      >
+                        <option value="date-asc"   style={{ background: "#0F1535" }}>Closest Date</option>
+                        <option value="date-desc"  style={{ background: "#0F1535" }}>Latest Date</option>
+                        <option value="name"       style={{ background: "#0F1535" }}>Name A–Z</option>
+                        <option value="Pending"    style={{ background: "#0F1535" }}>Pending</option>
+                        <option value="Confirmed"  style={{ background: "#0F1535" }}>Confirmed</option>
+                        <option value="Completed"  style={{ background: "#0F1535" }}>Completed</option>
+                        <option value="Cancelled"  style={{ background: "#0F1535" }}>Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+
                   {(() => {
                     const filtered = apptSearch.trim()
                       ? appointments.filter((a) => {
@@ -458,67 +529,95 @@ export default function AdminPage() {
                           );
                         })
                       : appointments;
-                    if (filtered.length === 0) {
+
+                    const isStatusFilter = ["Pending", "Confirmed", "Completed", "Cancelled"].includes(apptSort);
+                    const statusFiltered = isStatusFilter
+                      ? filtered.filter((a) => a.status === apptSort)
+                      : filtered;
+
+                    const sorted = [...statusFiltered].sort((a, b) => {
+                      if (apptSort === "date-desc") {
+                        const ta = (a.date ?? "") + parseTimeToMinutes(a.time).toString().padStart(5, "0");
+                        const tb = (b.date ?? "") + parseTimeToMinutes(b.time).toString().padStart(5, "0");
+                        return tb.localeCompare(ta);
+                      }
+                      if (apptSort === "name") return a.name.localeCompare(b.name);
+                      // default: closest date (also used for status filters)
+                      const ta = (a.date ?? "") + parseTimeToMinutes(a.time).toString().padStart(5, "0");
+                      const tb = (b.date ?? "") + parseTimeToMinutes(b.time).toString().padStart(5, "0");
+                      return ta.localeCompare(tb);
+                    });
+
+                    if (sorted.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
-                          <p className="text-slate-400 font-semibold">No appointments match that ID.</p>
+                          <p className="text-slate-400 font-semibold">No appointments match that search.</p>
                         </div>
                       );
                     }
-                    return filtered.map((appt, idx) => (
-                    <motion.div
-                      key={appt.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, delay: idx * 0.04, ease }}
-                      className="rounded-2xl p-6"
-                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                    >
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <User className="w-4 h-4 shrink-0" style={{ color: "#8B9EFF" }} />
-                            <span className="text-white font-bold">{appt.name}</span>
+                    return sorted.map((appt, idx) => (
+                      <motion.div
+                        key={appt.id}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: idx * 0.04, ease }}
+                        className="rounded-2xl p-6"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <User className="w-4 h-4 shrink-0" style={{ color: "#8B9EFF" }} />
+                              <span className="text-white font-bold">{appt.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
+                              <span className="text-slate-400 text-sm">{appt.phone}</span>
+                            </div>
+                            {appt.appointmentId && (
+                              <span
+                                className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg mt-2 inline-block"
+                                style={{
+                                  background: "rgba(79,110,247,0.12)",
+                                  color: "#8B9EFF",
+                                  border: "1px solid rgba(79,110,247,0.2)",
+                                }}
+                              >
+                                {appt.appointmentId}
+                              </span>
+                            )}
                           </div>
+                          <StatusBadge status={appt.status} />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                          <Detail icon={<Wrench className="w-3.5 h-3.5" />} label="Service" value={appt.service} />
+                          <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Date" value={formatDate(appt.date)} />
+                          <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Time" value={appt.time} />
+                          <Detail icon={<User className="w-3.5 h-3.5" />} label="Device" value={`${appt.brand} ${appt.deviceType}`} />
+                        </div>
+                        {appt.problem && (
+                          <div
+                            className="rounded-xl px-4 py-3 mb-4 text-sm text-slate-300"
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                          >
+                            <span className="text-slate-500 font-medium mr-2">Problem:</span>{appt.problem}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <span className="text-slate-500 text-xs">{formatSubmittedAt(appt.submittedAt)}</span>
                           <div className="flex items-center gap-2">
-                            <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
-                            <span className="text-slate-400 text-sm">{appt.phone}</span>
-                          </div>
-                          {appt.appointmentId && (
-                            <span
-                              className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg mt-2 inline-block"
-                              style={{
-                                background: "rgba(79,110,247,0.12)",
-                                color: "#8B9EFF",
-                                border: "1px solid rgba(79,110,247,0.2)",
-                              }}
+                            <button
+                              onClick={() => setEditingAppt(appt)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                              style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
                             >
-                              {appt.appointmentId}
-                            </span>
-                          )}
+                              <Pencil className="w-3 h-3" /> Edit
+                            </button>
+                            <StatusSelect value={appt.status} onChange={(s) => updateAppointmentStatus(appt.id, s)} />
+                          </div>
                         </div>
-                        <StatusBadge status={appt.status} />
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                        <Detail icon={<Wrench className="w-3.5 h-3.5" />} label="Service" value={appt.service} />
-                        <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Date" value={formatDate(appt.date)} />
-                        <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Time" value={appt.time} />
-                        <Detail icon={<User className="w-3.5 h-3.5" />} label="Device" value={`${appt.brand} ${appt.deviceType}`} />
-                      </div>
-                      {appt.problem && (
-                        <div
-                          className="rounded-xl px-4 py-3 mb-4 text-sm text-slate-300"
-                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
-                        >
-                          <span className="text-slate-500 font-medium mr-2">Problem:</span>{appt.problem}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <span className="text-slate-500 text-xs">{formatSubmittedAt(appt.submittedAt)}</span>
-                        <StatusSelect value={appt.status} onChange={(s) => updateAppointmentStatus(appt.id, s)} />
-                      </div>
-                    </motion.div>
-                  ));
+                      </motion.div>
+                    ));
                   })()}
                 </div>
               )}
@@ -538,40 +637,97 @@ export default function AdminPage() {
                 <EmptyState label="reservations" detail="Accessory reservations submitted from the shop will appear here." />
               ) : (
                 <div className="flex flex-col gap-4">
-                  {reservations.map((res, idx) => (
-                    <motion.div
-                      key={res.id}
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35, delay: idx * 0.04, ease }}
-                      className="rounded-2xl p-6"
-                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                    >
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <User className="w-4 h-4 shrink-0" style={{ color: "#C4B5FD" }} />
-                            <span className="text-white font-bold">{res.name}</span>
+                  {/* Sort */}
+                  <div className="flex justify-end">
+                    <div className="relative flex items-center">
+                      <ArrowUpDown className="absolute left-3 w-3.5 h-3.5 pointer-events-none" style={{ color: "#64748B" }} />
+                      <select
+                        value={resSort}
+                        onChange={(e) => setResSort(e.target.value as typeof resSort)}
+                        className="pl-8 pr-4 py-3 rounded-xl text-sm font-medium focus:outline-none cursor-pointer appearance-none"
+                        style={{
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          color: "#94A3B8",
+                        }}
+                      >
+                        <option value="date-asc"   style={{ background: "#0F1535" }}>Closest Date</option>
+                        <option value="date-desc"  style={{ background: "#0F1535" }}>Latest Date</option>
+                        <option value="name"       style={{ background: "#0F1535" }}>Name A–Z</option>
+                        <option value="Pending"    style={{ background: "#0F1535" }}>Pending</option>
+                        <option value="Confirmed"  style={{ background: "#0F1535" }}>Confirmed</option>
+                        <option value="Completed"  style={{ background: "#0F1535" }}>Completed</option>
+                        <option value="Cancelled"  style={{ background: "#0F1535" }}>Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const isStatusFilter = ["Pending", "Confirmed", "Completed", "Cancelled"].includes(resSort);
+                    const statusFiltered = isStatusFilter
+                      ? reservations.filter((r) => r.status === resSort)
+                      : reservations;
+
+                    const sorted = [...statusFiltered].sort((a, b) => {
+                      if (resSort === "date-desc") {
+                        return b.pickupDate.localeCompare(a.pickupDate);
+                      }
+                      if (resSort === "name") return a.name.localeCompare(b.name);
+                      return a.pickupDate.localeCompare(b.pickupDate);
+                    });
+
+                    if (sorted.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <p className="text-slate-400 font-semibold">No reservations match that filter.</p>
+                        </div>
+                      );
+                    }
+
+                    return sorted.map((res, idx) => (
+                      <motion.div
+                        key={res.id}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: idx * 0.04, ease }}
+                        className="rounded-2xl p-6"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <User className="w-4 h-4 shrink-0" style={{ color: "#C4B5FD" }} />
+                              <span className="text-white font-bold">{res.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
+                              <span className="text-slate-400 text-sm">{res.phone}</span>
+                            </div>
                           </div>
+                          <StatusBadge status={res.status} />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                          <Detail icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Product" value={res.productName} />
+                          <Detail icon={<span className="text-xs font-bold">₱</span>} label="Price" value={`₱${res.productPrice.toLocaleString()}`} />
+                          <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Pickup Date" value={formatDate(res.pickupDate)} />
+                          <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Pickup Time" value={res.pickupTime} />
+                        </div>
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <span className="text-slate-500 text-xs">{formatSubmittedAt(res.submittedAt)}</span>
                           <div className="flex items-center gap-2">
-                            <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
-                            <span className="text-slate-400 text-sm">{res.phone}</span>
+                            <button
+                              onClick={() => setEditingRes(res)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                              style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+                            >
+                              <Pencil className="w-3 h-3" /> Edit
+                            </button>
+                            <StatusSelect value={res.status} onChange={(s) => updateReservationStatus(res.id, s)} />
                           </div>
                         </div>
-                        <StatusBadge status={res.status} />
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                        <Detail icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Product" value={res.productName} />
-                        <Detail icon={<span className="text-xs font-bold">₱</span>} label="Price" value={`₱${res.productPrice.toLocaleString()}`} />
-                        <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Pickup Date" value={formatDate(res.pickupDate)} />
-                        <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Pickup Time" value={res.pickupTime} />
-                      </div>
-                      <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <span className="text-slate-500 text-xs">{formatSubmittedAt(res.submittedAt)}</span>
-                        <StatusSelect value={res.status} onChange={(s) => updateReservationStatus(res.id, s)} />
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    ));
+                  })()}
                 </div>
               )}
             </motion.div>
@@ -765,6 +921,30 @@ export default function AdminPage() {
         </AnimatePresence>
       </div>
 
+      {/* Appointment edit modal */}
+      <AnimatePresence>
+        {editingAppt && (
+          <AppointmentEditModal
+            key="appt-edit-modal"
+            appt={editingAppt}
+            onSave={(data) => updateAppointmentFull(editingAppt.id, data)}
+            onClose={() => setEditingAppt(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Reservation edit modal */}
+      <AnimatePresence>
+        {editingRes && (
+          <ReservationEditModal
+            key="res-edit-modal"
+            res={editingRes}
+            onSave={(data) => updateReservationFull(editingRes.id, data)}
+            onClose={() => setEditingRes(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Product modals */}
       {(() => {
         const categories = Array.from(new Set(products.map((p) => p.category))).sort();
@@ -858,6 +1038,351 @@ function EmptyState({ label, detail }: { label: string; detail: string }) {
       <ClipboardList className="w-12 h-12 mb-4 opacity-20 text-white" />
       <p className="text-slate-300 font-semibold text-lg mb-2">No {label} yet</p>
       <p className="text-slate-500 text-sm max-w-xs">{detail}</p>
+    </div>
+  );
+}
+
+function AppointmentEditModal({
+  appt,
+  onSave,
+  onClose,
+}: {
+  appt: AppointmentEntry;
+  onSave: (data: Partial<AppointmentEntry>) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(appt.name);
+  const [phone, setPhone] = useState(appt.phone);
+  const [service, setService] = useState(appt.service);
+  const [date, setDate] = useState(appt.date);
+  const [time, setTime] = useState(appt.time);
+  const [brand, setBrand] = useState(appt.brand);
+  const [deviceType, setDeviceType] = useState(appt.deviceType);
+  const [problem, setProblem] = useState(appt.problem ?? "");
+
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ name, phone, service, date, time, brand, deviceType, problem: problem || undefined });
+  };
+
+  const ease2 = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.2, ease: ease2 }}
+        className="w-full max-w-lg rounded-2xl p-6 my-8"
+        style={{
+          background: "#0D1225",
+          border: "1px solid rgba(79,110,247,0.25)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-white font-bold text-lg">Edit Appointment</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Service</label>
+            <select
+              value={service}
+              onChange={(e) => setService(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+              style={inputStyle}
+            >
+              <option value="Phone Repair" style={{ background: "#0F1535" }}>Phone Repair</option>
+              <option value="Laptop / Desktop Repair" style={{ background: "#0F1535" }}>Laptop / Desktop Repair</option>
+              <option value="Device Checkup" style={{ background: "#0F1535" }}>Device Checkup</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={{ ...inputStyle, colorScheme: "dark" }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Time Slot</label>
+              <select
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              >
+                {TIME_SLOTS.map((s) => (
+                  <option key={s} value={s} style={{ background: "#0F1535" }}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Device Brand</label>
+              <input
+                type="text"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Device Type</label>
+              <select
+                value={deviceType}
+                onChange={(e) => setDeviceType(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              >
+                <option value="Phone" style={{ background: "#0F1535" }}>Phone</option>
+                <option value="Laptop" style={{ background: "#0F1535" }}>Laptop</option>
+                <option value="Desktop" style={{ background: "#0F1535" }}>Desktop</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Problem Description <span className="normal-case font-normal text-slate-600">(optional)</span>
+            </label>
+            <textarea
+              value={problem}
+              onChange={(e) => setProblem(e.target.value)}
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none resize-none"
+              style={inputStyle}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                boxShadow: "0 4px 14px rgba(79,110,247,0.3)",
+              }}
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function ReservationEditModal({
+  res,
+  onSave,
+  onClose,
+}: {
+  res: ReservationEntry;
+  onSave: (data: Partial<ReservationEntry>) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(res.name);
+  const [phone, setPhone] = useState(res.phone);
+  const [productName, setProductName] = useState(res.productName);
+  const [productPrice, setProductPrice] = useState(String(res.productPrice));
+  const [pickupDate, setPickupDate] = useState(res.pickupDate);
+  const [pickupTime, setPickupTime] = useState(res.pickupTime);
+
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  const ease2 = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ name, phone, productName, productPrice: parseFloat(productPrice) || 0, pickupDate, pickupTime });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.2, ease: ease2 }}
+        className="w-full max-w-lg rounded-2xl p-6 my-8"
+        style={{
+          background: "#0D1225",
+          border: "1px solid rgba(139,92,246,0.25)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-white font-bold text-lg">Edit Reservation</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Product Name</label>
+              <input
+                type="text"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Price (₱)</label>
+              <input
+                type="number"
+                min={0}
+                value={productPrice}
+                onChange={(e) => setProductPrice(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Pickup Date</label>
+              <input
+                type="date"
+                value={pickupDate}
+                onChange={(e) => setPickupDate(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={{ ...inputStyle, colorScheme: "dark" }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Pickup Time</label>
+              <input
+                type="text"
+                value={pickupTime}
+                onChange={(e) => setPickupTime(e.target.value)}
+                placeholder="e.g. 2:00 PM"
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #8B5CF6, #A78BFA)",
+                boxShadow: "0 4px 14px rgba(139,92,246,0.3)",
+              }}
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </motion.div>
     </div>
   );
 }
