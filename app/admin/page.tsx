@@ -121,6 +121,14 @@ function formatSubmittedAt(iso: string) {
   });
 }
 
+function formatSubmittedDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function AdminPage() {
   const initiallyAuthed =
     typeof window !== "undefined" &&
@@ -208,6 +216,16 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+  };
+
+  const deleteAppointment = (id: string) => {
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
+    fetch(`/api/appointments/${id}`, { method: "DELETE" });
+  };
+
+  const deleteReservation = (id: string) => {
+    setReservations((prev) => prev.filter((r) => r.id !== id));
+    fetch(`/api/reservations/${id}`, { method: "DELETE" });
   };
 
   const updateReservationStatus = (id: string, status: EntryStatus) => {
@@ -555,69 +573,80 @@ export default function AdminPage() {
                         </div>
                       );
                     }
-                    return sorted.map((appt, idx) => (
-                      <motion.div
-                        key={appt.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: idx * 0.04, ease }}
-                        className="rounded-2xl p-6"
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                      >
-                        <div className="flex items-start justify-between gap-4 mb-4">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <User className="w-4 h-4 shrink-0" style={{ color: "#8B9EFF" }} />
-                              <span className="text-white font-bold">{appt.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
-                              <span className="text-slate-400 text-sm">{appt.phone}</span>
-                            </div>
-                            {appt.appointmentId && (
-                              <span
-                                className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg mt-2 inline-block"
-                                style={{
-                                  background: "rgba(79,110,247,0.12)",
-                                  color: "#8B9EFF",
-                                  border: "1px solid rgba(79,110,247,0.2)",
-                                }}
-                              >
-                                {appt.appointmentId}
-                              </span>
-                            )}
-                          </div>
-                          <StatusBadge status={appt.status} />
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                          <Detail icon={<Wrench className="w-3.5 h-3.5" />} label="Service" value={appt.service} />
-                          <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Date" value={formatDate(appt.date)} />
-                          <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Time" value={appt.time} />
-                          <Detail icon={<User className="w-3.5 h-3.5" />} label="Device" value={`${appt.brand} ${appt.deviceType}`} />
-                        </div>
-                        {appt.problem && (
-                          <div
-                            className="rounded-xl px-4 py-3 mb-4 text-sm text-slate-300"
-                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {sorted.map((appt, idx) => (
+                          <motion.div
+                            key={appt.id}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.35, delay: idx * 0.04, ease }}
+                            className="rounded-2xl p-5 flex flex-col gap-4"
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                           >
-                            <span className="text-slate-500 font-medium mr-2">Problem:</span>{appt.problem}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                          <span className="text-slate-500 text-xs">{formatSubmittedAt(appt.submittedAt)}</span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setEditingAppt(appt)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
-                              style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                {appt.appointmentId && (
+                                  <span
+                                    className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md mb-1.5 inline-block"
+                                    style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+                                  >
+                                    {appt.appointmentId}
+                                  </span>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 shrink-0" style={{ color: "#8B9EFF" }} />
+                                  <span className="text-white font-bold truncate">{appt.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
+                                  <span className="text-slate-400 text-sm">{appt.phone}</span>
+                                </div>
+                              </div>
+                              <StatusBadge status={appt.status} />
+                            </div>
+
+                            {/* Details */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Detail icon={<Wrench className="w-3.5 h-3.5" />} label="Service" value={appt.service} />
+                              <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Date" value={formatDate(appt.date)} />
+                              <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Time" value={appt.time} />
+                              <Detail icon={<User className="w-3.5 h-3.5" />} label="Device" value={`${appt.brand} ${appt.deviceType}`} />
+                            </div>
+
+                            {/* Problem */}
+                            {appt.problem && (
+                              <div
+                                className="rounded-xl px-3 py-2.5 text-sm text-slate-300 line-clamp-2"
+                                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                              >
+                                <span className="text-slate-500 font-medium mr-1.5">Problem:</span>{appt.problem}
+                              </div>
+                            )}
+
+                            {/* Footer */}
+                            <div
+                              className="flex items-center justify-between gap-2 pt-3 border-t mt-4"
+                              style={{ borderColor: "rgba(255,255,255,0.07)" }}
                             >
-                              <Pencil className="w-3 h-3" /> Edit
-                            </button>
-                            <StatusSelect value={appt.status} onChange={(s) => updateAppointmentStatus(appt.id, s)} />
-                          </div>
-                        </div>
-                      </motion.div>
-                    ));
+                              <span className="text-slate-500 text-xs shrink-0 sm:hidden">{formatSubmittedDate(appt.submittedAt)}</span>
+                              <span className="text-slate-500 text-xs shrink-0 hidden sm:inline">{formatSubmittedAt(appt.submittedAt)}</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  onClick={() => setEditingAppt(appt)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                                  style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+                                >
+                                  <Pencil className="w-3 h-3" /> Edit
+                                </button>
+                                <StatusSelect value={appt.status} onChange={(s) => updateAppointmentStatus(appt.id, s)} />
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    );
                   })()}
                 </div>
               )}
@@ -684,49 +713,62 @@ export default function AdminPage() {
                       );
                     }
 
-                    return sorted.map((res, idx) => (
-                      <motion.div
-                        key={res.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: idx * 0.04, ease }}
-                        className="rounded-2xl p-6"
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                      >
-                        <div className="flex items-start justify-between gap-4 mb-4">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <User className="w-4 h-4 shrink-0" style={{ color: "#C4B5FD" }} />
-                              <span className="text-white font-bold">{res.name}</span>
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {sorted.map((res, idx) => (
+                          <motion.div
+                            key={res.id}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.35, delay: idx * 0.04, ease }}
+                            className="rounded-2xl p-5 flex flex-col gap-4"
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                          >
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 shrink-0" style={{ color: "#C4B5FD" }} />
+                                  <span className="text-white font-bold truncate">{res.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
+                                  <span className="text-slate-400 text-sm">{res.phone}</span>
+                                </div>
+                              </div>
+                              <StatusBadge status={res.status} />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
-                              <span className="text-slate-400 text-sm">{res.phone}</span>
+
+                            {/* Details */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Detail icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Product" value={res.productName} />
+                              <Detail icon={<span className="text-xs font-bold">₱</span>} label="Price" value={`₱${res.productPrice.toLocaleString()}`} />
+                              <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Pickup Date" value={formatDate(res.pickupDate)} />
+                              <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Pickup Time" value={res.pickupTime} />
                             </div>
-                          </div>
-                          <StatusBadge status={res.status} />
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                          <Detail icon={<ShoppingBag className="w-3.5 h-3.5" />} label="Product" value={res.productName} />
-                          <Detail icon={<span className="text-xs font-bold">₱</span>} label="Price" value={`₱${res.productPrice.toLocaleString()}`} />
-                          <Detail icon={<CalendarDays className="w-3.5 h-3.5" />} label="Pickup Date" value={formatDate(res.pickupDate)} />
-                          <Detail icon={<Clock className="w-3.5 h-3.5" />} label="Pickup Time" value={res.pickupTime} />
-                        </div>
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                          <span className="text-slate-500 text-xs">{formatSubmittedAt(res.submittedAt)}</span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setEditingRes(res)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
-                              style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+
+                            {/* Footer */}
+                            <div
+                              className="flex items-center justify-between gap-2 pt-3 border-t mt-4"
+                              style={{ borderColor: "rgba(255,255,255,0.07)" }}
                             >
-                              <Pencil className="w-3 h-3" /> Edit
-                            </button>
-                            <StatusSelect value={res.status} onChange={(s) => updateReservationStatus(res.id, s)} />
-                          </div>
-                        </div>
-                      </motion.div>
-                    ));
+                              <span className="text-slate-500 text-xs shrink-0 sm:hidden">{formatSubmittedDate(res.submittedAt)}</span>
+                              <span className="text-slate-500 text-xs shrink-0 hidden sm:inline">{formatSubmittedAt(res.submittedAt)}</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  onClick={() => setEditingRes(res)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                                  style={{ background: "rgba(139,92,246,0.12)", color: "#C4B5FD" }}
+                                >
+                                  <Pencil className="w-3 h-3" /> Edit
+                                </button>
+                                <StatusSelect value={res.status} onChange={(s) => updateReservationStatus(res.id, s)} />
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    );
                   })()}
                 </div>
               )}
@@ -929,6 +971,7 @@ export default function AdminPage() {
             appt={editingAppt}
             onSave={(data) => updateAppointmentFull(editingAppt.id, data)}
             onClose={() => setEditingAppt(null)}
+            onDelete={() => deleteAppointment(editingAppt.id)}
           />
         )}
       </AnimatePresence>
@@ -941,6 +984,7 @@ export default function AdminPage() {
             res={editingRes}
             onSave={(data) => updateReservationFull(editingRes.id, data)}
             onClose={() => setEditingRes(null)}
+            onDelete={() => deleteReservation(editingRes.id)}
           />
         )}
       </AnimatePresence>
@@ -1046,12 +1090,15 @@ function AppointmentEditModal({
   appt,
   onSave,
   onClose,
+  onDelete,
 }: {
   appt: AppointmentEntry;
   onSave: (data: Partial<AppointmentEntry>) => void;
   onClose: () => void;
+  onDelete: () => void;
 }) {
   const [name, setName] = useState(appt.name);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [phone, setPhone] = useState(appt.phone);
   const [service, setService] = useState(appt.service);
   const [date, setDate] = useState(appt.date);
@@ -1205,24 +1252,56 @@ function AppointmentEditModal({
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{
-                background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
-                boxShadow: "0 4px 14px rgba(79,110,247,0.3)",
-              }}
-            >
-              Save Changes
-            </button>
+            {confirmDelete ? (
+              <>
+                <span className="flex-1 flex items-center text-sm text-slate-400">Delete this appointment?</span>
+                <button
+                  type="button"
+                  onClick={() => { onDelete(); onClose(); }}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(239,68,68,0.2)", color: "#F87171" }}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="py-3 px-4 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(239,68,68,0.1)", color: "#F87171" }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                    boxShadow: "0 4px 14px rgba(79,110,247,0.3)",
+                  }}
+                >
+                  Save Changes
+                </button>
+              </>
+            )}
           </div>
         </form>
       </motion.div>
@@ -1234,12 +1313,15 @@ function ReservationEditModal({
   res,
   onSave,
   onClose,
+  onDelete,
 }: {
   res: ReservationEntry;
   onSave: (data: Partial<ReservationEntry>) => void;
   onClose: () => void;
+  onDelete: () => void;
 }) {
   const [name, setName] = useState(res.name);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [phone, setPhone] = useState(res.phone);
   const [productName, setProductName] = useState(res.productName);
   const [productPrice, setProductPrice] = useState(String(res.productPrice));
@@ -1362,24 +1444,56 @@ function ReservationEditModal({
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{
-                background: "linear-gradient(135deg, #8B5CF6, #A78BFA)",
-                boxShadow: "0 4px 14px rgba(139,92,246,0.3)",
-              }}
-            >
-              Save Changes
-            </button>
+            {confirmDelete ? (
+              <>
+                <span className="flex-1 flex items-center text-sm text-slate-400">Delete this reservation?</span>
+                <button
+                  type="button"
+                  onClick={() => { onDelete(); onClose(); }}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(239,68,68,0.2)", color: "#F87171" }}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="py-3 px-4 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(239,68,68,0.1)", color: "#F87171" }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(135deg, #8B5CF6, #A78BFA)",
+                    boxShadow: "0 4px 14px rgba(139,92,246,0.3)",
+                  }}
+                >
+                  Save Changes
+                </button>
+              </>
+            )}
           </div>
         </form>
       </motion.div>
