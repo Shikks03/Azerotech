@@ -6,6 +6,7 @@ type EntryStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
 
 interface AppointmentEntry {
   id: string;
+  appointmentId?: string;
   type: "appointment";
   submittedAt: string;
   status: EntryStatus;
@@ -29,6 +30,7 @@ import {
   CheckCircle2,
   Phone,
   MessageCircle,
+  Copy,
 } from "lucide-react";
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
@@ -105,6 +107,7 @@ export default function BookAppointment() {
   const [phoneError, setPhoneError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmedId, setConfirmedId] = useState("");
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -170,11 +173,13 @@ export default function BookAppointment() {
       deviceType: formData.deviceType,
       ...(formData.problem ? { problem: formData.problem } : {}),
     };
-    await fetch("/api/appointments", {
+    const res = await fetch("/api/appointments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newEntry),
     });
+    const data = await res.json();
+    setConfirmedId(data.appointmentId ?? "");
     setSubmitting(false);
     setConfirmed(true);
   };
@@ -210,9 +215,33 @@ export default function BookAppointment() {
             <CheckCircle2 className="w-8 h-8" style={{ color: "#16A34A" }} />
           </div>
           <h1 className="text-2xl font-bold text-[#0F172A] mb-2">Appointment Confirmed!</h1>
-          <p className="text-slate-500 mb-8 text-sm">
+          <p className="text-slate-500 mb-5 text-sm">
             Please arrive at your selected time. Need to reschedule? Call us.
           </p>
+
+          {confirmedId && (
+            <div
+              className="inline-flex items-center gap-2.5 rounded-xl px-5 py-3 mb-8 font-mono font-bold text-sm tracking-widest"
+              style={{
+                background: "rgba(79,110,247,0.1)",
+                border: "1px solid rgba(79,110,247,0.25)",
+                color: "#4F6EF7",
+              }}
+            >
+              <span className="text-slate-400 font-semibold font-sans tracking-normal text-xs">
+                Appointment ID
+              </span>
+              {confirmedId}
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(confirmedId)}
+                title="Copy to clipboard"
+                className="ml-0.5 p-1 rounded-md hover:bg-indigo-50 transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           <div
             className="rounded-xl p-6 text-left mb-8 space-y-3"

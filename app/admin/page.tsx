@@ -25,6 +25,7 @@ type EntryStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
 
 interface AppointmentEntry {
   id: string;
+  appointmentId?: string;
   type: "appointment";
   submittedAt: string;
   status: EntryStatus;
@@ -107,6 +108,7 @@ export default function AdminPage() {
   const [reservations, setReservations] = useState<ReservationEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [apptSearch, setApptSearch] = useState("");
   // per-product manual stock input values
   const [stockInputs, setStockInputs] = useState<Record<number, string>>({});
 
@@ -380,7 +382,32 @@ export default function AdminPage() {
                 <EmptyState label="appointments" detail="Appointments submitted from the booking form will appear here." />
               ) : (
                 <div className="flex flex-col gap-4">
-                  {appointments.map((appt, idx) => (
+                  <input
+                    type="text"
+                    placeholder="Search by Appointment ID (e.g. AZT-260310-0042)"
+                    value={apptSearch}
+                    onChange={(e) => setApptSearch(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl text-sm font-medium focus:outline-none"
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      color: "white",
+                    }}
+                  />
+                  {(() => {
+                    const filtered = apptSearch.trim()
+                      ? appointments.filter((a) =>
+                          (a.appointmentId ?? "").toLowerCase().includes(apptSearch.trim().toLowerCase())
+                        )
+                      : appointments;
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <p className="text-slate-400 font-semibold">No appointments match that ID.</p>
+                        </div>
+                      );
+                    }
+                    return filtered.map((appt, idx) => (
                     <motion.div
                       key={appt.id}
                       initial={{ opacity: 0, y: 16 }}
@@ -399,6 +426,18 @@ export default function AdminPage() {
                             <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: "#64748B" }} />
                             <span className="text-slate-400 text-sm">{appt.phone}</span>
                           </div>
+                          {appt.appointmentId && (
+                            <span
+                              className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg mt-2 inline-block"
+                              style={{
+                                background: "rgba(79,110,247,0.12)",
+                                color: "#8B9EFF",
+                                border: "1px solid rgba(79,110,247,0.2)",
+                              }}
+                            >
+                              {appt.appointmentId}
+                            </span>
+                          )}
                         </div>
                         <StatusBadge status={appt.status} />
                       </div>
@@ -421,7 +460,8 @@ export default function AdminPage() {
                         <StatusSelect value={appt.status} onChange={(s) => updateAppointmentStatus(appt.id, s)} />
                       </div>
                     </motion.div>
-                  ))}
+                  ));
+                  })()}
                 </div>
               )}
             </motion.div>
