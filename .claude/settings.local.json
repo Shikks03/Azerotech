@@ -4,7 +4,8 @@
       "Bash(npm install motion)",
       "Bash(npm run:*)",
       "Bash(mkdir:*)",
-      "Bash(npx eslint app/admin/page.tsx)"
+      "Bash(npx eslint app/admin/page.tsx)",
+      "Bash(grep:*)"
     ]
   },
   "enabledPlugins": {

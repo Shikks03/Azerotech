@@ -20,7 +20,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed w-full top-0 z-50 bg-navy-dark/95 backdrop-blur-md border-b border-indigo-500/20">
+      <header className="fixed w-full top-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center">
@@ -33,7 +33,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-black hover:text-indigo-400 transition-colors font-medium text-sm"
+                  className="text-black hover:text-indigo-600 transition-colors font-medium text-sm"
                 >
                   {link.label}
                 </Link>
@@ -48,7 +48,7 @@ export default function Header() {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden text-white"
+              className="md:hidden text-black"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
             >
@@ -75,13 +75,13 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden bg-navy-dark/98 backdrop-blur-md border-t border-indigo-500/20">
+          <div className="md:hidden bg-white border-t border-gray-200">
             <div className="px-4 py-4 space-y-3">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block text-gray-300 hover:text-indigo-400 py-2 font-medium"
+                  className="block text-black hover:text-indigo-600 py-2 font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   {link.label}

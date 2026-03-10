@@ -16,6 +16,9 @@ import {
   Package,
   Plus,
   Minus,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 
 const ADMIN_PASSWORD = "admin123";
@@ -97,10 +100,9 @@ function formatSubmittedAt(iso: string) {
 }
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem("azerotech_admin_authed") === "true";
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => typeof window !== "undefined" && sessionStorage.getItem("azerotech_admin_authed") === "true"
+  );
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState(false);
   const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory">("appointments");
@@ -111,6 +113,9 @@ export default function AdminPage() {
   const [apptSearch, setApptSearch] = useState("");
   // per-product manual stock input values
   const [stockInputs, setStockInputs] = useState<Record<number, string>>({});
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -193,6 +198,32 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stock: newStock }),
     });
+  };
+
+  const addProduct = async (data: { name: string; price: string; category: string; image: string; stock: number }) => {
+    await fetch("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setShowAddModal(false);
+    loadData();
+  };
+
+  const editProductInfo = async (id: number, data: { name: string; price: string; category: string; image: string }) => {
+    await fetch(`/api/products/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setEditingProduct(null);
+    loadData();
+  };
+
+  const deleteProduct = async (id: number) => {
+    await fetch(`/api/products/${id}`, { method: "DELETE" });
+    setConfirmDeleteId(null);
+    loadData();
   };
 
   const pendingCount =
@@ -528,14 +559,34 @@ export default function AdminPage() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3, ease }}
             >
+              {/* Inventory header */}
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-slate-400 text-sm font-semibold">
+                  {products.length} product{products.length !== 1 ? "s" : ""}
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                    color: "white",
+                    boxShadow: "0 4px 14px rgba(79,110,247,0.3)",
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Product
+                </button>
+              </div>
+
               {products.length === 0 ? (
-                <EmptyState label="products" detail="No products found. Visit /api/products/seed to seed the database." />
+                <EmptyState label="products" detail="No products yet. Click 'Add Product' to get started, or visit /api/products/seed to seed the database." />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {products.map((product, idx) => {
                     const { color, bg, label } = stockLevel(product.stock);
                     const stock = product.stock ?? 0;
                     const inputVal = stockInputs[product.id] ?? String(stock);
+                    const isConfirmingDelete = confirmDeleteId === product.id;
                     return (
                       <motion.div
                         key={product.id}
@@ -548,6 +599,12 @@ export default function AdminPage() {
                         {/* Header */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
+                            <span
+                              className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md mb-1.5 inline-block"
+                              style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+                            >
+                              #{String(product.id).padStart(3, "0")}
+                            </span>
                             <p className="text-white font-bold text-sm leading-snug truncate">{product.name}</p>
                             <p className="text-slate-500 text-xs mt-0.5">{product.category} · {product.price}</p>
                           </div>
@@ -628,6 +685,48 @@ export default function AdminPage() {
                             </button>
                           ))}
                         </div>
+
+                        {/* Edit / Remove actions */}
+                        <div
+                          className="flex gap-2 pt-1 border-t"
+                          style={{ borderColor: "rgba(255,255,255,0.07)" }}
+                        >
+                          <button
+                            onClick={() => { setEditingProduct(product); setConfirmDeleteId(null); }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                            style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Edit Info
+                          </button>
+                          {isConfirmingDelete ? (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => deleteProduct(product.id)}
+                                className="px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                style={{ background: "rgba(239,68,68,0.2)", color: "#EF4444" }}
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteId(product.id)}
+                              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                              style={{ background: "rgba(239,68,68,0.10)", color: "#EF4444" }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Remove
+                            </button>
+                          )}
+                        </div>
                       </motion.div>
                     );
                   })}
@@ -638,6 +737,42 @@ export default function AdminPage() {
 
         </AnimatePresence>
       </div>
+
+      {/* Product modals */}
+      {(() => {
+        const categories = Array.from(new Set(products.map((p) => p.category))).sort();
+        return (
+          <AnimatePresence>
+            {showAddModal && (
+              <ProductFormModal
+                key="add-modal"
+                title="Add Product"
+                initial={{ name: "", price: "", category: "", image: "", stock: 0 }}
+                categories={categories}
+                showStock
+                onSubmit={addProduct}
+                onClose={() => setShowAddModal(false)}
+              />
+            )}
+            {editingProduct && (
+              <ProductFormModal
+                key="edit-modal"
+                title="Save Changes"
+                initial={{
+                  name: editingProduct.name,
+                  price: editingProduct.price,
+                  category: editingProduct.category,
+                  image: editingProduct.image,
+                }}
+                categories={categories}
+                showStock={false}
+                onSubmit={(data) => editProductInfo(editingProduct.id, data)}
+                onClose={() => setEditingProduct(null)}
+              />
+            )}
+          </AnimatePresence>
+        );
+      })()}
     </div>
   );
 }
@@ -696,6 +831,217 @@ function EmptyState({ label, detail }: { label: string; detail: string }) {
       <ClipboardList className="w-12 h-12 mb-4 opacity-20 text-white" />
       <p className="text-slate-300 font-semibold text-lg mb-2">No {label} yet</p>
       <p className="text-slate-500 text-sm max-w-xs">{detail}</p>
+    </div>
+  );
+}
+
+type ProductFormData = { name: string; price: string; category: string; image: string; stock: number };
+
+function ProductFormModal({
+  title,
+  initial,
+  categories,
+  showStock,
+  onSubmit,
+  onClose,
+}: {
+  title: string;
+  initial: Partial<ProductFormData>;
+  categories: string[];
+  showStock: boolean;
+  onSubmit: (data: ProductFormData) => void;
+  onClose: () => void;
+}) {
+  const initialCategory = initial.category ?? "";
+  const isExisting = categories.includes(initialCategory);
+
+  const [name, setName] = useState(initial.name ?? "");
+  // category select value: existing category or "other"
+  const [categorySelect, setCategorySelect] = useState(
+    initialCategory && !isExisting ? "other" : initialCategory
+  );
+  const [customCategory, setCustomCategory] = useState(
+    initialCategory && !isExisting ? initialCategory : ""
+  );
+  // price: strip ₱ prefix from stored value
+  const [price, setPrice] = useState(
+    (initial.price ?? "").replace(/^₱/, "").trim()
+  );
+  const [image, setImage] = useState(initial.image ?? "");
+  const [stock, setStock] = useState(String(initial.stock ?? 0));
+
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  const resolvedCategory = categorySelect === "other" ? customCategory.trim() : categorySelect;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !resolvedCategory || !price) return;
+    onSubmit({
+      name: name.trim(),
+      price: `₱${price}`,
+      category: resolvedCategory,
+      image: image.trim(),
+      stock: parseInt(stock) || 0,
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.2 }}
+        className="w-full max-w-md rounded-2xl p-6"
+        style={{
+          background: "#0D1225",
+          border: "1px solid rgba(79,110,247,0.25)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-white font-bold text-lg">{title}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Product Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Product Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Samsung Fast Charger"
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+
+          {/* Category — dropdown */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Category
+            </label>
+            <select
+              value={categorySelect}
+              onChange={(e) => setCategorySelect(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none cursor-pointer"
+              style={{ ...inputStyle, color: categorySelect ? "white" : "#475569" }}
+            >
+              <option value="" disabled style={{ background: "#0D1225" }}>Select a category</option>
+              {categories.map((c) => (
+                <option key={c} value={c} style={{ background: "#0D1225" }}>{c}</option>
+              ))}
+              <option value="other" style={{ background: "#0D1225" }}>Other…</option>
+            </select>
+            {categorySelect === "other" && (
+              <input
+                type="text"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="Enter new category"
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600 mt-2"
+                style={inputStyle}
+                autoFocus
+              />
+            )}
+          </div>
+
+          {/* Price — number with ₱ prefix */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Price
+            </label>
+            <div
+              className="flex items-center rounded-xl overflow-hidden"
+              style={inputStyle}
+            >
+              <span
+                className="pl-4 pr-2 py-3 text-sm font-bold select-none"
+                style={{ color: "#8B9EFF" }}
+              >
+                ₱
+              </span>
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="450"
+                className="flex-1 pr-4 py-3 bg-transparent text-sm text-white focus:outline-none placeholder:text-slate-600"
+              />
+            </div>
+          </div>
+
+          {/* Image URL */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Image URL
+            </label>
+            <input
+              type="text"
+              value={image}
+              onChange={(e) => setImage(e.target.value)}
+              placeholder="https://..."
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+
+          {/* Initial Stock (Add only) */}
+          {showStock && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                Initial Stock
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={stock}
+                onChange={(e) => setStock(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                color: "white",
+                boxShadow: "0 4px 14px rgba(79,110,247,0.3)",
+              }}
+            >
+              {title}
+            </button>
+          </div>
+        </form>
+      </motion.div>
     </div>
   );
 }

@@ -304,14 +304,20 @@ export default function Accessories() {
                   >
                     {/* Product Image */}
                     <div className="relative w-full h-48 overflow-hidden bg-slate-50">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className={`object-cover transition-transform duration-500 group-hover:scale-105${outOfStock ? " grayscale" : ""}`}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        unoptimized
-                      />
+                      {product.image ? (
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className={`object-cover transition-transform duration-500 group-hover:scale-105${outOfStock ? " grayscale" : ""}`}
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+                          <span className="text-slate-300 text-xs font-medium">No image</span>
+                        </div>
+                      )}
                       {outOfStock && (
                         <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.35)" }}>
                           <span
