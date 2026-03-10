@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import {
@@ -8,6 +9,7 @@ import {
   Monitor,
   ShoppingBag,
   CheckCircle2,
+  Printer,
 } from "lucide-react";
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
@@ -25,7 +27,22 @@ const fadeUpView = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease },
 });
 
-const serviceCategories = [
+type ServiceCategory = {
+  id: string;
+  label: string;
+  Icon: React.ElementType;
+  count: number;
+  accentBg: string;
+  accentColor: string;
+  buttonBg: string;
+  buttonShadow: string;
+  buttonLabel: string;
+  href: string;
+  services: string[];
+  twoColumn?: boolean;
+};
+
+const serviceCategories: ServiceCategory[] = [
   {
     id: "phone",
     label: "Phone Repair",
@@ -47,6 +64,43 @@ const serviceCategories = [
       "Not Charging Repair",
       "Volume Button Repair",
       "Power Button Repair",
+    ],
+  },
+  {
+    id: "printing",
+    label: "Printing Services",
+    Icon: Printer,
+    count: 22,
+    accentBg: "#FFF7ED",
+    accentColor: "#F97316",
+    buttonBg: "linear-gradient(135deg, #F97316, #FB923C)",
+    buttonShadow: "0 6px 20px rgba(249,115,22,0.3)",
+    buttonLabel: "Inquire About Printing",
+    href: "/contact",
+    twoColumn: true,
+    services: [
+      "Photo Print – Wallet / 3R / 4R / 5R / 8R",
+      "Rush ID – 1x1 / 2x2 / Passport",
+      "Document Printing",
+      "Laminate",
+      "Tarpaulin",
+      "T-shirt Printing",
+      "Calling Card",
+      "PVC ID",
+      "Laminated ID",
+      "Sticker Label",
+      "Flyers",
+      "Brochure",
+      "Perforated Tickets",
+      "Invitation",
+      "Thank You Tag",
+      "Keychains",
+      "Photo Magnet",
+      "Personalized Mugs",
+      "Note Pad / Memo Pad",
+      "Name Tag",
+      "Notebook & Book Label",
+      "Bag Tag",
     ],
   },
   {
@@ -180,7 +234,7 @@ export default function Services() {
       {/* ─── SERVICE CARDS ─── */}
       <section className="py-16 md:py-24" style={{ background: "#F7F8FF" }}>
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {serviceCategories.map((cat, catIdx) => (
               <motion.div
                 key={cat.id}
@@ -208,16 +262,18 @@ export default function Services() {
                 </div>
 
                 {/* Service List */}
-                <div className="flex flex-col flex-1 bg-white px-8 py-6 gap-4">
-                  {cat.services.map((svc) => (
-                    <div key={svc} className="flex items-center gap-3">
-                      <CheckCircle2
-                        className="w-5 h-5 shrink-0"
-                        style={{ color: cat.accentColor }}
-                      />
-                      <span className="text-[#0F172A] text-base">{svc}</span>
-                    </div>
-                  ))}
+                <div className="flex flex-col flex-1 bg-white px-8 py-6">
+                  <div className={cat.twoColumn ? "grid grid-cols-2 gap-x-4 gap-y-3" : "flex flex-col gap-4"}>
+                    {cat.services.map((svc) => (
+                      <div key={svc} className="flex items-center gap-2.5">
+                        <CheckCircle2
+                          className="w-4 h-4 shrink-0"
+                          style={{ color: cat.accentColor }}
+                        />
+                        <span className={`text-[#0F172A] ${cat.twoColumn ? "text-sm" : "text-base"}`}>{svc}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* CTA Button */}
