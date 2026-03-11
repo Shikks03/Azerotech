@@ -130,11 +130,7 @@ function formatSubmittedDate(iso: string) {
 }
 
 export default function AdminPage() {
-  const initiallyAuthed =
-    typeof window !== "undefined" &&
-    sessionStorage.getItem("azerotech_admin_authed") === "true";
-
-  const [isAuthenticated, setIsAuthenticated] = useState(initiallyAuthed);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState(false);
   const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory">("appointments");
@@ -152,7 +148,15 @@ export default function AdminPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(initiallyAuthed);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const authed = sessionStorage.getItem("azerotech_admin_authed") === "true";
+    if (authed) {
+      setIsAuthenticated(true);
+      setLoading(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;

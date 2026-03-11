@@ -50,7 +50,7 @@ Track new features, bugs, and problems for the AzeroTech project.
 | 1 | Header nav text invisible on scroll | Nav link text is black and becomes invisible against the dark background when the user scrolls down | `Done` |
 | 2 | Logo and title overlap on small screens | "AzeroTech" title text overlaps with the logo in portrait/small screen orientations due to insufficient spacing | `Todo` |
 | 3 | Admin panel hydration mismatch | `isAuthenticated` was initialized using `typeof window !== "undefined"` causing server/client HTML mismatch. Fixed by always starting with `false` and reading `sessionStorage` in a `useEffect`. | `Done` |
-| 4 | Delete button in edit modal doesn't delete from DB | The delete button inside the Appointment and Reservation edit modals removes the entry from local UI state but the `DELETE /api/appointments/[id]` and `DELETE /api/reservations/[id]` API routes are not implemented, so the record is not actually removed from MongoDB. | `Todo` |
+| 4 | Delete button in edit modal doesn't delete from DB | The delete button inside the Appointment and Reservation edit modals removes the entry from local UI state but the `DELETE /api/appointments/[id]` and `DELETE /api/reservations/[id]` API routes are not implemented, so the record is not actually removed from MongoDB. | `Done` |
 
 ---
 
