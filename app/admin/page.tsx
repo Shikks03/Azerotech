@@ -22,6 +22,9 @@ import {
   ArrowUpDown,
   Monitor,
   Search,
+  Users,
+  AlertTriangle,
+  FileText,
 } from "lucide-react";
 
 const TIME_SLOTS = [
@@ -53,6 +56,7 @@ type EntryStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
 interface AppointmentEntry {
   id: string;
   appointmentId?: string;
+  customerId?: string;
   type: "appointment";
   submittedAt: string;
   status: EntryStatus;
@@ -68,6 +72,7 @@ interface AppointmentEntry {
 
 interface ReservationEntry {
   id: string;
+  customerId?: string;
   type: "reservation";
   submittedAt: string;
   status: EntryStatus;
@@ -86,6 +91,30 @@ interface Product {
   category: string;
   image: string;
   stock?: number;
+}
+
+interface CustomerEntry {
+  id: string;
+  name: string;
+  phone: string;
+  type: "walk-in" | "appointment" | "reservation";
+  nameMismatches: { submittedName: string; date: string }[];
+  createdAt: string;
+  // populated client-side
+  appointments?: AppointmentEntry[];
+  reservations?: ReservationEntry[];
+  serviceRecords?: ServiceRecord[];
+}
+
+interface ServiceRecord {
+  id: string;
+  customerId: string;
+  date: string;
+  service: string;
+  device: string;
+  cost: number;
+  notes: string;
+  createdAt: string;
 }
 
 interface LcdItem {
@@ -147,7 +176,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState(false);
-  const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory" | "lcd-stock">("appointments");
+  const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory" | "lcd-stock" | "customers">("appointments");
   const [appointments, setAppointments] = useState<AppointmentEntry[]>([]);
   const [reservations, setReservations] = useState<ReservationEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -164,6 +193,14 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [customers, setCustomers] = useState<CustomerEntry[]>([]);
+  const [custSearch, setCustSearch] = useState("");
+  const [custSort, setCustSort] = useState<"latest" | "oldest" | "name" | "visits">("latest");
+  const [addingCustomer, setAddingCustomer] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<CustomerEntry | null>(null);
+  const [addingRecordFor, setAddingRecordFor] = useState<CustomerEntry | null>(null);
+  const [confirmDeleteCustomerId, setConfirmDeleteCustomerId] = useState<string | null>(null);
 
   const [lcdSearch, setLcdSearch] = useState("");
   const [lcdSort, setLcdSort] = useState<"name-asc" | "name-desc" | "low-stock" | "no-stock">("name-asc");
@@ -195,10 +232,37 @@ export default function AdminPage() {
       fetch("/api/appointments").then((r) => r.json()),
       fetch("/api/reservations").then((r) => r.json()),
       fetch("/api/products").then((r) => r.json()),
-    ]).then(([appts, resrvs, prods]) => {
-      setAppointments(appts as AppointmentEntry[]);
-      setReservations(resrvs as ReservationEntry[]);
+      fetch("/api/customers").then((r) => r.json()),
+    ]).then(async ([appts, resrvs, prods, custs]) => {
+      const apptList = appts as AppointmentEntry[];
+      const resvList = resrvs as ReservationEntry[];
+      setAppointments(apptList);
+      setReservations(resvList);
       setProducts(prods as Product[]);
+
+      // Fetch service records for all customers
+      const custList = custs as (Omit<CustomerEntry, "id"> & { _id: string })[];
+      const withRecords = await Promise.all(
+        custList.map(async (c) => {
+          const cid = c._id.toString();
+          let serviceRecords: ServiceRecord[] = [];
+          try {
+            const res = await fetch(`/api/customers/${cid}/records`);
+            const raw = (await res.json()) as (Omit<ServiceRecord, "id"> & { _id: string })[];
+            serviceRecords = raw.map((r) => ({ ...r, id: r._id.toString() }));
+          } catch {}
+          const cAppts = apptList.filter((a) => a.customerId === cid);
+          const cResvs = resvList.filter((r) => r.customerId === cid);
+          return {
+            ...c,
+            id: cid,
+            appointments: cAppts,
+            reservations: cResvs,
+            serviceRecords,
+          } as CustomerEntry;
+        })
+      );
+      setCustomers(withRecords);
       setLoading(false);
     });
   }, [isAuthenticated, refreshKey]);
@@ -287,6 +351,64 @@ export default function AdminPage() {
   const deleteReservation = (id: string) => {
     setReservations((prev) => prev.filter((r) => r.id !== id));
     fetch(`/api/reservations/${id}`, { method: "DELETE" });
+  };
+
+  const addCustomer = async (name: string, phone: string) => {
+    const res = await fetch("/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, type: "walk-in" }),
+    });
+    if (res.ok) {
+      setAddingCustomer(false);
+      loadData();
+    } else {
+      const data = await res.json();
+      alert(data.error ?? "Failed to add customer");
+    }
+  };
+
+  const editCustomer = async (id: string, data: { name?: string; phone?: string }) => {
+    await fetch(`/api/customers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setEditingCustomer(null);
+    loadData();
+  };
+
+  const dismissMismatches = async (id: string) => {
+    await fetch(`/api/customers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dismissMismatches: true }),
+    });
+    loadData();
+  };
+
+  const deleteCustomer = async (id: string) => {
+    await fetch(`/api/customers/${id}`, { method: "DELETE" });
+    setConfirmDeleteCustomerId(null);
+    loadData();
+  };
+
+  const addServiceRecord = async (
+    customerId: string,
+    data: { date: string; service: string; device: string; cost: number; notes: string }
+  ) => {
+    await fetch(`/api/customers/${customerId}/records`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    setAddingRecordFor(null);
+    loadData();
+  };
+
+  const deleteServiceRecord = async (customerId: string, recordId: string) => {
+    await fetch(`/api/customers/${customerId}/records/${recordId}`, { method: "DELETE" });
+    loadData();
   };
 
   const updateReservationStatus = (id: string, status: EntryStatus) => {
@@ -493,11 +615,12 @@ export default function AdminPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8"
         >
           {[
             { label: "Appointments", value: appointments.length, color: "#4F6EF7" },
             { label: "Reservations",  value: reservations.length,  color: "#8B5CF6" },
+            { label: "Customers",     value: customers.length,      color: "#06B6D4" },
             { label: "Pending",       value: pendingCount,          color: "#EAB308" },
             { label: "Out of Stock",  value: outOfStockCount,       color: "#EF4444" },
           ].map((stat) => (
@@ -523,6 +646,7 @@ export default function AdminPage() {
             [
               { key: "appointments", Icon: Wrench,      label: "Appointments" },
               { key: "reservations", Icon: ShoppingBag, label: "Reservations" },
+              { key: "customers",    Icon: Users,       label: "Customers" },
               { key: "inventory",    Icon: Package,     label: "Inventory" },
               { key: "lcd-stock",    Icon: Monitor,     label: "LCD Stock" },
             ] as const
@@ -1262,6 +1386,319 @@ export default function AdminPage() {
             </motion.div>
           )}
 
+          {/* ── Customers ── */}
+          {activeTab === "customers" && (
+            <motion.div
+              key="customers"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3, ease }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-slate-400 text-sm font-semibold">
+                  {customers.length} customer{customers.length !== 1 ? "s" : ""}
+                </p>
+                <button
+                  onClick={() => setAddingCustomer(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(135deg, #06B6D4, #22D3EE)",
+                    color: "white",
+                    boxShadow: "0 4px 14px rgba(6,182,212,0.3)",
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Walk-In
+                </button>
+              </div>
+
+              {/* Search + Sort */}
+              {customers.length > 0 && (
+                <div className="flex gap-3 mb-5 flex-wrap sm:flex-nowrap">
+                  <div className="relative flex-1 min-w-0">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: "#64748B" }} />
+                    <input
+                      type="text"
+                      value={custSearch}
+                      onChange={(e) => setCustSearch(e.target.value)}
+                      placeholder="Search by name or phone…"
+                      className="w-full pl-8 pr-4 py-2.5 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}
+                    />
+                  </div>
+                  <div className="relative flex items-center shrink-0">
+                    <ArrowUpDown className="absolute left-3 w-3.5 h-3.5 pointer-events-none" style={{ color: "#64748B" }} />
+                    <select
+                      value={custSort}
+                      onChange={(e) => setCustSort(e.target.value as typeof custSort)}
+                      className="pl-8 pr-4 py-2.5 rounded-xl text-sm font-medium focus:outline-none cursor-pointer appearance-none"
+                      style={{
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        color: "#94A3B8",
+                      }}
+                    >
+                      <option value="latest"  style={{ background: "#0F1535" }}>Latest Activity</option>
+                      <option value="oldest"  style={{ background: "#0F1535" }}>Oldest Activity</option>
+                      <option value="name"    style={{ background: "#0F1535" }}>Name A–Z</option>
+                      <option value="visits"  style={{ background: "#0F1535" }}>Most Visits</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {customers.length === 0 ? (
+                <EmptyState label="customers" detail="Customer profiles are auto-created when appointments or reservations are submitted. Add walk-ins manually." />
+              ) : (() => {
+                const q = custSearch.trim().toLowerCase();
+                const filtered = q
+                  ? customers.filter(
+                      (c) =>
+                        c.name.toLowerCase().includes(q) ||
+                        c.phone.includes(q)
+                    )
+                  : customers;
+
+                const visitCount = (c: CustomerEntry) =>
+                  (c.appointments?.length ?? 0) + (c.reservations?.length ?? 0) + (c.serviceRecords?.length ?? 0);
+
+                const lastActivity = (c: CustomerEntry): string => {
+                  const dates: string[] = [
+                    ...(c.appointments?.map((a) => a.submittedAt) ?? []),
+                    ...(c.reservations?.map((r) => r.submittedAt) ?? []),
+                    ...(c.serviceRecords?.map((s) => s.createdAt) ?? []),
+                    c.createdAt,
+                  ];
+                  return dates.sort().at(-1) ?? c.createdAt;
+                };
+
+                const sorted = [...filtered].sort((a, b) => {
+                  if (custSort === "name") return a.name.localeCompare(b.name);
+                  if (custSort === "visits") return visitCount(b) - visitCount(a);
+                  if (custSort === "oldest") return lastActivity(a).localeCompare(lastActivity(b));
+                  return lastActivity(b).localeCompare(lastActivity(a));
+                });
+
+                if (sorted.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <p className="text-slate-400 font-semibold">No customers match that search.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex flex-col gap-4">
+                    {sorted.map((cust, idx) => {
+                      const isConfirmingDelete = confirmDeleteCustomerId === cust.id;
+                      const visits = visitCount(cust);
+                      const hasMismatches = cust.nameMismatches && cust.nameMismatches.length > 0;
+                      return (
+                        <motion.div
+                          key={cust.id}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.35, delay: idx * 0.03, ease }}
+                          className="rounded-2xl overflow-hidden"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                        >
+                          {/* Mismatch warning */}
+                          {hasMismatches && (
+                            <div
+                              className="px-5 py-3 flex items-start gap-3"
+                              style={{ background: "rgba(234,179,8,0.10)", borderBottom: "1px solid rgba(234,179,8,0.20)" }}
+                            >
+                              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#EAB308" }} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold" style={{ color: "#EAB308" }}>Name mismatch detected</p>
+                                {cust.nameMismatches.map((m, i) => (
+                                  <p key={i} className="text-xs text-slate-400 mt-0.5">
+                                    Submitted as &quot;{m.submittedName}&quot; on {formatSubmittedDate(m.date)}
+                                  </p>
+                                ))}
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                <button
+                                  onClick={() => setEditingCustomer(cust)}
+                                  className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all hover:opacity-80"
+                                  style={{ background: "rgba(234,179,8,0.15)", color: "#EAB308" }}
+                                >
+                                  Update Name
+                                </button>
+                                <button
+                                  onClick={() => dismissMismatches(cust.id)}
+                                  className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all hover:opacity-80"
+                                  style={{ background: "rgba(255,255,255,0.08)", color: "#94A3B8" }}
+                                >
+                                  Dismiss
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="p-5">
+                            {/* Customer header */}
+                            <div className="flex items-start justify-between gap-3 mb-4">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Users className="w-4 h-4" style={{ color: "#22D3EE" }} />
+                                  <span className="text-white font-bold">{cust.name}</span>
+                                  <span
+                                    className="text-xs px-2 py-0.5 rounded-full font-semibold capitalize"
+                                    style={{
+                                      background: cust.type === "walk-in" ? "rgba(234,179,8,0.15)" : "rgba(6,182,212,0.15)",
+                                      color: cust.type === "walk-in" ? "#EAB308" : "#22D3EE",
+                                    }}
+                                  >
+                                    {cust.type}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Phone className="w-3.5 h-3.5" style={{ color: "#64748B" }} />
+                                  <span className="text-slate-400 text-sm">{cust.phone}</span>
+                                  <span className="text-slate-600 text-xs">·</span>
+                                  <span className="text-slate-500 text-xs">{visits} visit{visits !== 1 ? "s" : ""}</span>
+                                  <span className="text-slate-600 text-xs">·</span>
+                                  <span className="text-slate-500 text-xs">Since {formatDate(cust.createdAt.slice(0, 10))}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Appointments */}
+                            {(cust.appointments?.length ?? 0) > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#8B9EFF" }}>Appointments</p>
+                                <div className="flex flex-col gap-1.5">
+                                  {cust.appointments!.map((a) => (
+                                    <div
+                                      key={a.id}
+                                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl"
+                                      style={{ background: "rgba(79,110,247,0.08)", border: "1px solid rgba(79,110,247,0.15)" }}
+                                    >
+                                      <div className="min-w-0">
+                                        <p className="text-sm text-white font-semibold truncate">{a.service}</p>
+                                        <p className="text-xs text-slate-500">{formatDate(a.date)} · {a.brand} {a.deviceType}</p>
+                                      </div>
+                                      <StatusBadge status={a.status} />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Reservations */}
+                            {(cust.reservations?.length ?? 0) > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#C4B5FD" }}>Reservations</p>
+                                <div className="flex flex-col gap-1.5">
+                                  {cust.reservations!.map((r) => (
+                                    <div
+                                      key={r.id}
+                                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl"
+                                      style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)" }}
+                                    >
+                                      <div className="min-w-0">
+                                        <p className="text-sm text-white font-semibold truncate">{r.productName}</p>
+                                        <p className="text-xs text-slate-500">₱{r.productPrice.toLocaleString()} · Pickup: {formatDate(r.pickupDate)}</p>
+                                      </div>
+                                      <StatusBadge status={r.status} />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Walk-in service records */}
+                            {(cust.serviceRecords?.length ?? 0) > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#34D399" }}>Walk-In Services</p>
+                                <div className="flex flex-col gap-1.5">
+                                  {cust.serviceRecords!.map((s) => (
+                                    <div
+                                      key={s.id}
+                                      className="flex items-start justify-between gap-3 px-3 py-2 rounded-xl"
+                                      style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-sm text-white font-semibold truncate">{s.service}</p>
+                                        <p className="text-xs text-slate-500">{formatDate(s.date)} · {s.device}{s.cost > 0 ? ` · ₱${s.cost.toLocaleString()}` : ""}</p>
+                                        {s.notes && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">Note: {s.notes}</p>}
+                                      </div>
+                                      <button
+                                        onClick={() => deleteServiceRecord(cust.id, s.id)}
+                                        className="shrink-0 p-1.5 rounded-lg transition-all hover:opacity-80"
+                                        style={{ background: "rgba(239,68,68,0.10)", color: "#EF4444" }}
+                                        title="Delete record"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Actions */}
+                            <div
+                              className="flex items-center gap-2 pt-3 border-t flex-wrap"
+                              style={{ borderColor: "rgba(255,255,255,0.07)" }}
+                            >
+                              <button
+                                onClick={() => setAddingRecordFor(cust)}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                                style={{ background: "rgba(16,185,129,0.12)", color: "#34D399" }}
+                              >
+                                <FileText className="w-3 h-3" />
+                                Add Service Record
+                              </button>
+                              <button
+                                onClick={() => setEditingCustomer(cust)}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                                style={{ background: "rgba(6,182,212,0.12)", color: "#22D3EE" }}
+                              >
+                                <Pencil className="w-3 h-3" />
+                                Edit
+                              </button>
+                              {isConfirmingDelete ? (
+                                <div className="flex gap-1 ml-auto">
+                                  <button
+                                    onClick={() => deleteCustomer(cust.id)}
+                                    className="px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                    style={{ background: "rgba(239,68,68,0.2)", color: "#EF4444" }}
+                                  >
+                                    Confirm Delete
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDeleteCustomerId(null)}
+                                    className="px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                    style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmDeleteCustomerId(cust.id)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80 ml-auto"
+                                  style={{ background: "rgba(239,68,68,0.10)", color: "#EF4444" }}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
 
@@ -1311,6 +1748,33 @@ export default function AdminPage() {
             hideStock
             onSubmit={(name) => editLcdName(editingLcd.id, name)}
             onClose={() => setEditingLcd(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Customer modals */}
+      <AnimatePresence>
+        {addingCustomer && (
+          <AddCustomerModal
+            key="add-customer-modal"
+            onSubmit={addCustomer}
+            onClose={() => setAddingCustomer(false)}
+          />
+        )}
+        {editingCustomer && (
+          <EditCustomerModal
+            key="edit-customer-modal"
+            customer={editingCustomer}
+            onSubmit={(data) => editCustomer(editingCustomer.id, data)}
+            onClose={() => setEditingCustomer(null)}
+          />
+        )}
+        {addingRecordFor && (
+          <AddServiceRecordModal
+            key="add-record-modal"
+            customerName={addingRecordFor.name}
+            onSubmit={(data) => addServiceRecord(addingRecordFor.id, data)}
+            onClose={() => setAddingRecordFor(null)}
           />
         )}
       </AnimatePresence>
@@ -2029,6 +2493,331 @@ function ProductFormModal({
               }}
             >
               {title}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function AddCustomerModal({
+  onSubmit,
+  onClose,
+}: {
+  onSubmit: (name: string, phone: string) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const ease2 = [0.22, 1, 0.36, 1] as [number, number, number, number];
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !phone.trim()) return;
+    onSubmit(name.trim(), phone.trim());
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.2, ease: ease2 }}
+        className="w-full max-w-sm rounded-2xl p-6"
+        style={{ background: "#0D1225", border: "1px solid rgba(6,182,212,0.25)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5" style={{ color: "#22D3EE" }} />
+            <h2 className="text-white font-bold text-lg">Add Walk-In Customer</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Juan dela Cruz"
+              autoFocus
+              required
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+              placeholder="09XXXXXXXXX"
+              required
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #06B6D4, #22D3EE)", boxShadow: "0 4px 14px rgba(6,182,212,0.3)" }}
+            >
+              Add Customer
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function EditCustomerModal({
+  customer,
+  onSubmit,
+  onClose,
+}: {
+  customer: CustomerEntry;
+  onSubmit: (data: { name?: string; phone?: string }) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(customer.name);
+  const [phone, setPhone] = useState(customer.phone);
+  const ease2 = [0.22, 1, 0.36, 1] as [number, number, number, number];
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !phone.trim()) return;
+    onSubmit({ name: name.trim(), phone: phone.trim() });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.2, ease: ease2 }}
+        className="w-full max-w-sm rounded-2xl p-6"
+        style={{ background: "#0D1225", border: "1px solid rgba(6,182,212,0.25)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Pencil className="w-5 h-5" style={{ color: "#22D3EE" }} />
+            <h2 className="text-white font-bold text-lg">Edit Customer</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoFocus
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+              required
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+              style={inputStyle}
+            />
+          </div>
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #06B6D4, #22D3EE)", boxShadow: "0 4px 14px rgba(6,182,212,0.3)" }}
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function AddServiceRecordModal({
+  customerName,
+  onSubmit,
+  onClose,
+}: {
+  customerName: string;
+  onSubmit: (data: { date: string; service: string; device: string; cost: number; notes: string }) => void;
+  onClose: () => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(today);
+  const [service, setService] = useState("");
+  const [device, setDevice] = useState("");
+  const [cost, setCost] = useState("");
+  const [notes, setNotes] = useState("");
+  const ease2 = [0.22, 1, 0.36, 1] as [number, number, number, number];
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!date || !service.trim() || !device.trim()) return;
+    onSubmit({ date, service: service.trim(), device: device.trim(), cost: parseFloat(cost) || 0, notes: notes.trim() });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.2, ease: ease2 }}
+        className="w-full max-w-sm rounded-2xl p-6 my-8"
+        style={{ background: "#0D1225", border: "1px solid rgba(16,185,129,0.25)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5" style={{ color: "#34D399" }} />
+            <h2 className="text-white font-bold text-lg">Add Service Record</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-slate-500 text-sm mb-5">for {customerName}</p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+              style={{ ...inputStyle, colorScheme: "dark" }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Service</label>
+            <input
+              type="text"
+              value={service}
+              onChange={(e) => setService(e.target.value)}
+              placeholder="e.g. Screen Replacement"
+              required
+              autoFocus
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Device</label>
+            <input
+              type="text"
+              value={device}
+              onChange={(e) => setDevice(e.target.value)}
+              placeholder="e.g. iPhone 14 Pro"
+              required
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Cost (₱)</label>
+            <div className="flex items-center rounded-xl overflow-hidden" style={inputStyle}>
+              <span className="pl-4 pr-2 py-3 text-sm font-bold select-none" style={{ color: "#34D399" }}>₱</span>
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                placeholder="0"
+                className="flex-1 pr-4 py-3 bg-transparent text-sm text-white focus:outline-none placeholder:text-slate-600"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Notes <span className="normal-case font-normal text-slate-600">(optional)</span>
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              placeholder="Any additional notes…"
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none resize-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #10B981, #34D399)", boxShadow: "0 4px 14px rgba(16,185,129,0.3)" }}
+            >
+              Add Record
             </button>
           </div>
         </form>

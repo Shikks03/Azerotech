@@ -23,8 +23,47 @@ export async function POST(req: NextRequest) {
   const dd = String(now.getDate()).padStart(2, "0");
   const xxxx = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
   const appointmentId = `AZT-${yy}${mm}${dd}-${xxxx}`;
-  const doc = { ...body, appointmentId };
+
   const client = await clientPromise;
-  await client.db(DB).collection(COL).insertOne(doc);
+  const db = client.db(DB);
+
+  // Find or create customer
+  const phone = body.phone;
+  const submittedName: string = body.name ?? "";
+  let customerId: string | undefined;
+
+  if (phone) {
+    const existing = await db.collection("customers").findOne({ phone });
+    if (existing) {
+      customerId = existing._id.toString();
+      // Check name mismatch (case-insensitive)
+      if (submittedName.trim().toLowerCase() !== (existing.name as string).trim().toLowerCase()) {
+        await db.collection("customers").updateOne(
+          { _id: existing._id },
+          {
+            $push: {
+              nameMismatches: {
+                submittedName: submittedName.trim(),
+                date: now.toISOString(),
+              },
+            } as never,
+          }
+        );
+      }
+    } else {
+      // Create new customer
+      const result = await db.collection("customers").insertOne({
+        name: submittedName.trim(),
+        phone,
+        type: "appointment",
+        nameMismatches: [],
+        createdAt: now.toISOString(),
+      });
+      customerId = result.insertedId.toString();
+    }
+  }
+
+  const doc = { ...body, appointmentId, ...(customerId ? { customerId } : {}) };
+  await db.collection(COL).insertOne(doc);
   return NextResponse.json({ ok: true, appointmentId }, { status: 201 });
 }
