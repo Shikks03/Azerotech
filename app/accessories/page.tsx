@@ -64,8 +64,15 @@ export default function Accessories() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [reservingProduct, setReservingProduct] = useState<Product | null>(null);
   const [phoneError, setPhoneError] = useState("");
-  const [formData, setFormData] = useState({
-    name: "",
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    phone: string;
+    pickupDate: string;
+    pickupTime: string;
+  }>({
+    firstName: "",
+    lastName: "",
     phone: "",
     pickupDate: "",
     pickupTime: "",
@@ -108,7 +115,10 @@ export default function Accessories() {
       }
       return;
     }
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name as keyof typeof prev]: value,
+    }));
   };
 
   const getMinDate = () => {
@@ -124,7 +134,8 @@ export default function Accessories() {
   };
 
   const canSubmit =
-    !!formData.name &&
+    !!formData.firstName &&
+    !!formData.lastName &&
     isPhoneValid(formData.phone) &&
     !!formData.pickupDate &&
     !!formData.pickupTime;
@@ -138,7 +149,7 @@ export default function Accessories() {
       type: "reservation",
       submittedAt: new Date().toISOString(),
       status: "Pending",
-      name: formData.name,
+      name: `${formData.firstName} ${formData.lastName}`,
       phone: formData.phone,
       pickupDate: formData.pickupDate,
       pickupTime: formData.pickupTime,
@@ -158,7 +169,7 @@ export default function Accessories() {
     setReservingProduct(null);
     setReserved(false);
     setPhoneError("");
-    setFormData({ name: "", phone: "", pickupDate: "", pickupTime: "" });
+    setFormData({ firstName: "", lastName: "", phone: "", pickupDate: "", pickupTime: "" });
   };
 
   return (
@@ -486,21 +497,38 @@ export default function Accessories() {
 
                   {/* Form */}
                   <form onSubmit={handleSubmitReservation} className="px-7 py-6 space-y-4">
-                    {/* Full Name */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
-                        Full Name <span style={{ color: "#EF4444" }}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        placeholder="Your full name"
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400 text-sm"
-                        onFocus={(e) => (e.target.style.borderColor = "#8B5CF6")}
-                        onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
-                      />
+                    {/* First Name + Last Name */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                          First Name <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          placeholder="First name"
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400 text-sm"
+                          onFocus={(e) => (e.target.style.borderColor = "#8B5CF6")}
+                          onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                          Last Name <span style={{ color: "#EF4444" }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          placeholder="Last name"
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400 text-sm"
+                          onFocus={(e) => (e.target.style.borderColor = "#8B5CF6")}
+                          onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                        />
+                      </div>
                     </div>
 
                     {/* Phone */}

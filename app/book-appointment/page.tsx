@@ -100,7 +100,8 @@ export default function BookAppointment() {
     service: "",
     date: "",
     time: "",
-    name: "",
+    firstName: "",
+    lastName: "",
     phone: "",
     brand: "",
     deviceType: "",
@@ -207,7 +208,8 @@ export default function BookAppointment() {
     if (step === 2) return !!formData.date && !!formData.time;
     if (step === 3)
       return (
-        !!formData.name &&
+        !!formData.firstName &&
+        !!formData.lastName &&
         isPhoneValid(formData.phone) &&
         !!formData.brand &&
         !!formData.deviceType
@@ -233,7 +235,7 @@ export default function BookAppointment() {
       service: formData.service,
       date: formData.date,
       time: formData.time,
-      name: formData.name,
+      name: `${formData.firstName} ${formData.lastName}`,
       phone: formData.phone,
       brand: formData.brand,
       deviceType: formData.deviceType,
@@ -317,7 +319,7 @@ export default function BookAppointment() {
               ["Service",    formData.service],
               ["Date",       formatDate(formData.date)],
               ["Time",       formData.time],
-              ["Name",       formData.name],
+              ["Name",       `${formData.firstName} ${formData.lastName}`],
               ["Phone",      formData.phone],
               ["Device",     `${formData.brand} ${formData.deviceType}`],
               ...(formData.problem ? [["Problem", formData.problem] as [string, string]] : []),
@@ -659,21 +661,38 @@ export default function BookAppointment() {
                     <h2 className="text-[#0F172A] text-2xl font-bold">Your Information</h2>
                   </div>
 
-                  {/* Full Name */}
-                  <div>
-                    <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
-                      Full Name <span style={{ color: "#EF4444" }}>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Enter your full name"
-                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400"
-                      onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
-                      onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
-                    />
+                  {/* First Name + Last Name */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                        First Name <span style={{ color: "#EF4444" }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        placeholder="First name"
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400"
+                        onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
+                        onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#0F172A] mb-1.5">
+                        Last Name <span style={{ color: "#EF4444" }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        placeholder="Last name"
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none text-[#0F172A] placeholder:text-slate-400"
+                        onFocus={(e) => (e.target.style.borderColor = "#4F6EF7")}
+                        onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
+                      />
+                    </div>
                   </div>
 
                   {/* Phone Number */}
@@ -775,7 +794,7 @@ export default function BookAppointment() {
                       ["Service",    formData.service],
                       ["Date",       formatDate(formData.date)],
                       ["Time",       formData.time],
-                      ["Name",       formData.name],
+                      ["Name",       `${formData.firstName} ${formData.lastName}`],
                       ["Phone",      formData.phone],
                       ["Device",     `${formData.brand} ${formData.deviceType}`],
                       ...(formData.problem ? [["Problem", formData.problem] as [string, string]] : []),
