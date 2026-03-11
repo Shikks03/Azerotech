@@ -21,6 +21,7 @@ import {
   X,
   ArrowUpDown,
   Monitor,
+  Search,
 } from "lucide-react";
 
 const TIME_SLOTS = [
@@ -154,6 +155,7 @@ export default function AdminPage() {
   const [apptSearch, setApptSearch] = useState("");
   const [apptSort, setApptSort] = useState<"date-asc" | "date-desc" | "name" | "Pending" | "Confirmed" | "Completed" | "Cancelled">("date-asc");
   const [resSort, setResSort] = useState<"date-asc" | "date-desc" | "name" | "Pending" | "Confirmed" | "Completed" | "Cancelled">("date-asc");
+  const [resSearch, setResSearch] = useState("");
   const [editingRes, setEditingRes] = useState<ReservationEntry | null>(null);
   const [editingAppt, setEditingAppt] = useState<AppointmentEntry | null>(null);
   // per-product manual stock input values
@@ -726,9 +728,24 @@ export default function AdminPage() {
                 <EmptyState label="reservations" detail="Accessory reservations submitted from the shop will appear here." />
               ) : (
                 <div className="flex flex-col gap-4">
-                  {/* Sort */}
-                  <div className="flex justify-end">
-                    <div className="relative flex items-center">
+                  {/* Search + Sort */}
+                  <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                    <div className="relative flex-1 min-w-0">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: "#64748B" }} />
+                      <input
+                        type="text"
+                        value={resSearch}
+                        onChange={(e) => setResSearch(e.target.value)}
+                        placeholder="Search by name, phone, or product…"
+                        className="w-full pl-8 pr-4 py-3 rounded-xl text-sm focus:outline-none placeholder:text-slate-500"
+                        style={{
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          color: "#E2E8F0",
+                        }}
+                      />
+                    </div>
+                    <div className="relative flex items-center shrink-0">
                       <ArrowUpDown className="absolute left-3 w-3.5 h-3.5 pointer-events-none" style={{ color: "#64748B" }} />
                       <select
                         value={resSort}
@@ -752,10 +769,20 @@ export default function AdminPage() {
                   </div>
 
                   {(() => {
+                    const query = resSearch.trim().toLowerCase();
+                    const searched = query
+                      ? reservations.filter(
+                          (r) =>
+                            r.name.toLowerCase().includes(query) ||
+                            r.phone.includes(query) ||
+                            r.productName.toLowerCase().includes(query)
+                        )
+                      : reservations;
+
                     const isStatusFilter = ["Pending", "Confirmed", "Completed", "Cancelled"].includes(resSort);
                     const statusFiltered = isStatusFilter
-                      ? reservations.filter((r) => r.status === resSort)
-                      : reservations;
+                      ? searched.filter((r) => r.status === resSort)
+                      : searched;
 
                     const sorted = [...statusFiltered].sort((a, b) => {
                       if (resSort === "date-desc") {
@@ -768,7 +795,9 @@ export default function AdminPage() {
                     if (sorted.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
-                          <p className="text-slate-400 font-semibold">No reservations match that filter.</p>
+                          <p className="text-slate-400 font-semibold">
+                            {query ? `No reservations found for "${resSearch}".` : "No reservations match that filter."}
+                          </p>
                         </div>
                       );
                     }
