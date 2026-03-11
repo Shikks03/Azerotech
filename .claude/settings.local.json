@@ -5,7 +5,8 @@
       "Bash(npm run:*)",
       "Bash(mkdir:*)",
       "Bash(npx eslint app/admin/page.tsx)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)"
     ]
   },
   "enabledPlugins": {

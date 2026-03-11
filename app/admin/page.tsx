@@ -20,6 +20,7 @@ import {
   Trash2,
   X,
   ArrowUpDown,
+  Monitor,
 } from "lucide-react";
 
 const TIME_SLOTS = [
@@ -86,6 +87,12 @@ interface Product {
   stock?: number;
 }
 
+interface LcdItem {
+  id: number;
+  name: string;
+  stock: number;
+}
+
 const STATUS_STYLES: Record<EntryStatus, { bg: string; color: string }> = {
   Pending:   { bg: "rgba(234,179,8,0.15)",   color: "#EAB308" },
   Confirmed: { bg: "rgba(79,110,247,0.15)",  color: "#4F6EF7" },
@@ -100,6 +107,12 @@ function stockLevel(stock: number | undefined): { color: string; bg: string; lab
   if (stock === 0)  return { color: "#EF4444", bg: "rgba(239,68,68,0.15)",  label: "Out of Stock" };
   if (stock <= 5)   return { color: "#EAB308", bg: "rgba(234,179,8,0.15)",  label: "Low Stock" };
   return              { color: "#16A34A", bg: "rgba(22,163,74,0.15)",  label: "In Stock" };
+}
+
+function lcdStockLevel(stock: number): { color: string; bg: string; label: string } {
+  if (stock === 0) return { color: "#EF4444", bg: "rgba(239,68,68,0.15)",  label: "No Stock" };
+  if (stock === 1) return { color: "#EAB308", bg: "rgba(234,179,8,0.15)",  label: "Low Stock" };
+  return             { color: "#16A34A", bg: "rgba(22,163,74,0.15)",  label: "In Stock" };
 }
 
 function formatDate(iso: string) {
@@ -133,7 +146,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState(false);
-  const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory">("appointments");
+  const [activeTab, setActiveTab] = useState<"appointments" | "reservations" | "inventory" | "lcd-stock">("appointments");
   const [appointments, setAppointments] = useState<AppointmentEntry[]>([]);
   const [reservations, setReservations] = useState<ReservationEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -149,6 +162,22 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [lcdSearch, setLcdSearch] = useState("");
+  const [lcdSort, setLcdSort] = useState<"name-asc" | "name-desc" | "low-stock" | "no-stock">("name-asc");
+
+  // LCD Stock state (localStorage-backed)
+  const [lcdItems, setLcdItems] = useState<LcdItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("azerotech_lcd_stock");
+      if (stored) return JSON.parse(stored) as LcdItem[];
+    } catch {}
+    return [];
+  });
+  const [lcdStockInputs, setLcdStockInputs] = useState<Record<number, string>>({});
+  const [showAddLcdModal, setShowAddLcdModal] = useState(false);
+  const [editingLcd, setEditingLcd] = useState<LcdItem | null>(null);
+  const [confirmDeleteLcdId, setConfirmDeleteLcdId] = useState<number | null>(null);
 
   useEffect(() => {
     const authed = sessionStorage.getItem("azerotech_admin_authed") === "true";
@@ -173,6 +202,32 @@ export default function AdminPage() {
   }, [isAuthenticated, refreshKey]);
 
   const loadData = () => setRefreshKey((k) => k + 1);
+
+  // Persist LCD items to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("azerotech_lcd_stock", JSON.stringify(lcdItems));
+  }, [lcdItems]);
+
+  const updateLcdStock = (id: number, newStock: number) => {
+    if (newStock < 0) return;
+    setLcdItems((prev) => prev.map((item) => item.id === id ? { ...item, stock: newStock } : item));
+  };
+
+  const addLcdItem = (name: string, stock: number) => {
+    const newId = Date.now();
+    setLcdItems((prev) => [...prev, { id: newId, name: name.trim(), stock }]);
+    setShowAddLcdModal(false);
+  };
+
+  const editLcdName = (id: number, name: string) => {
+    setLcdItems((prev) => prev.map((item) => item.id === id ? { ...item, name: name.trim() } : item));
+    setEditingLcd(null);
+  };
+
+  const deleteLcdItem = (id: number) => {
+    setLcdItems((prev) => prev.filter((item) => item.id !== id));
+    setConfirmDeleteLcdId(null);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -464,9 +519,10 @@ export default function AdminPage() {
         >
           {(
             [
-              { key: "appointments", Icon: Wrench,    label: "Appointments" },
+              { key: "appointments", Icon: Wrench,      label: "Appointments" },
               { key: "reservations", Icon: ShoppingBag, label: "Reservations" },
-              { key: "inventory",    Icon: Package,   label: "Inventory" },
+              { key: "inventory",    Icon: Package,     label: "Inventory" },
+              { key: "lcd-stock",    Icon: Monitor,     label: "LCD Stock" },
             ] as const
           ).map(({ key, Icon, label }) => {
             const active = activeTab === key;
@@ -964,6 +1020,219 @@ export default function AdminPage() {
             </motion.div>
           )}
 
+          {/* ── LCD Stock ── */}
+          {activeTab === "lcd-stock" && (
+            <motion.div
+              key="lcd-stock"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3, ease }}
+            >
+              {/* LCD Stock header */}
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-slate-400 text-sm font-semibold">
+                  {lcdItems.length} LCD type{lcdItems.length !== 1 ? "s" : ""}
+                </p>
+                <button
+                  onClick={() => setShowAddLcdModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                  style={{
+                    background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                    color: "white",
+                    boxShadow: "0 4px 14px rgba(79,110,247,0.3)",
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add LCD Type
+                </button>
+              </div>
+
+              {/* Search + Sort */}
+              {lcdItems.length > 0 && (
+                <div className="flex gap-3 mb-5">
+                  <input
+                    type="text"
+                    value={lcdSearch}
+                    onChange={(e) => setLcdSearch(e.target.value)}
+                    placeholder="Search LCD types…"
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}
+                  />
+                  <select
+                    value={lcdSort}
+                    onChange={(e) => setLcdSort(e.target.value as typeof lcdSort)}
+                    className="px-3 py-2.5 rounded-xl text-sm font-semibold focus:outline-none cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)", color: "#94A3B8" }}
+                  >
+                    <option value="name-asc"  style={{ background: "#0F1535" }}>Name A–Z</option>
+                    <option value="name-desc" style={{ background: "#0F1535" }}>Name Z–A</option>
+                    <option value="low-stock" style={{ background: "#0F1535" }}>Low Stock</option>
+                    <option value="no-stock"  style={{ background: "#0F1535" }}>No Stock</option>
+                  </select>
+                </div>
+              )}
+
+              {lcdItems.length === 0 ? (
+                <EmptyState label="LCD types" detail="No LCD types yet. Click 'Add LCD Type' to start tracking your LCD replacement stock." />
+              ) : (() => {
+                const filtered = lcdItems
+                  .filter((item) => item.name.toLowerCase().includes(lcdSearch.toLowerCase()))
+                  .sort((a, b) => {
+                    if (lcdSort === "name-asc")  return a.name.localeCompare(b.name);
+                    if (lcdSort === "name-desc") return b.name.localeCompare(a.name);
+                    if (lcdSort === "low-stock") return a.stock - b.stock;
+                    if (lcdSort === "no-stock")  return (a.stock === 0 ? 0 : 1) - (b.stock === 0 ? 0 : 1);
+                    return 0;
+                  });
+                if (filtered.length === 0) return (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <p className="text-slate-400 font-semibold">No results for &ldquo;{lcdSearch}&rdquo;</p>
+                  </div>
+                );
+                return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filtered.map((item, idx) => {
+                    const { color, bg, label } = lcdStockLevel(item.stock);
+                    const inputVal = lcdStockInputs[item.id] ?? String(item.stock);
+                    const isConfirmingDelete = confirmDeleteLcdId === item.id;
+                    return (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: idx * 0.04, ease }}
+                        className="rounded-2xl p-5 flex flex-col gap-4"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Monitor className="w-3.5 h-3.5 shrink-0" style={{ color: "#8B9EFF" }} />
+                              <span
+                                className="text-xs font-mono font-semibold"
+                                style={{ color: "#8B9EFF" }}
+                              >
+                                LCD
+                              </span>
+                            </div>
+                            <p className="text-white font-bold text-sm leading-snug">{item.name}</p>
+                          </div>
+                          <span
+                            className="px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap shrink-0"
+                            style={{ background: bg, color }}
+                          >
+                            {label}
+                          </span>
+                        </div>
+
+                        {/* Stock count display */}
+                        <div
+                          className="rounded-xl px-4 py-3 flex items-center justify-between"
+                          style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${color}33` }}
+                        >
+                          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Stock</span>
+                          <span className="text-2xl font-bold" style={{ color }}>{item.stock}</span>
+                        </div>
+
+                        {/* +/- controls */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateLcdStock(item.id, item.stock - 1)}
+                            disabled={item.stock <= 0}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444" }}
+                            title="Remove 1"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+
+                          <input
+                            type="number"
+                            min={0}
+                            value={inputVal}
+                            onChange={(e) =>
+                              setLcdStockInputs((prev) => ({ ...prev, [item.id]: e.target.value }))
+                            }
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              if (!isNaN(val) && val >= 0) {
+                                updateLcdStock(item.id, val);
+                              }
+                              setLcdStockInputs((prev) => {
+                                const next = { ...prev };
+                                delete next[item.id];
+                                return next;
+                              });
+                            }}
+                            className="flex-1 text-center text-white font-bold rounded-xl py-2.5 focus:outline-none text-sm"
+                            style={{
+                              background: "rgba(255,255,255,0.07)",
+                              border: "1px solid rgba(255,255,255,0.12)",
+                            }}
+                          />
+
+                          <button
+                            onClick={() => updateLcdStock(item.id, item.stock + 1)}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+                            style={{ background: "rgba(22,163,74,0.15)", color: "#16A34A" }}
+                            title="Add 1"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Edit / Remove actions */}
+                        <div
+                          className="flex gap-2 pt-1 border-t"
+                          style={{ borderColor: "rgba(255,255,255,0.07)" }}
+                        >
+                          <button
+                            onClick={() => { setEditingLcd(item); setConfirmDeleteLcdId(null); }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                            style={{ background: "rgba(79,110,247,0.12)", color: "#8B9EFF" }}
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Edit Name
+                          </button>
+                          {isConfirmingDelete ? (
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => deleteLcdItem(item.id)}
+                                className="px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                style={{ background: "rgba(239,68,68,0.2)", color: "#EF4444" }}
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteLcdId(null)}
+                                className="px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteLcdId(item.id)}
+                              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
+                              style={{ background: "rgba(239,68,68,0.10)", color: "#EF4444" }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                );
+              })()}
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
 
@@ -994,6 +1263,29 @@ export default function AdminPage() {
       </AnimatePresence>
 
       {/* Product modals */}
+      {/* LCD modals */}
+      <AnimatePresence>
+        {showAddLcdModal && (
+          <LcdFormModal
+            key="lcd-add-modal"
+            title="Add LCD Type"
+            initial={{ name: "", stock: 0 }}
+            onSubmit={(name, stock) => addLcdItem(name, stock)}
+            onClose={() => setShowAddLcdModal(false)}
+          />
+        )}
+        {editingLcd && (
+          <LcdFormModal
+            key="lcd-edit-modal"
+            title="Edit LCD Type"
+            initial={{ name: editingLcd.name, stock: editingLcd.stock }}
+            hideStock
+            onSubmit={(name) => editLcdName(editingLcd.id, name)}
+            onClose={() => setEditingLcd(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {(() => {
         const categories = Array.from(new Set(products.map((p) => p.category))).sort();
         return (
@@ -1674,6 +1966,121 @@ function ProductFormModal({
 
           {/* Initial Stock (Add only) */}
           {showStock && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                Initial Stock
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={stock}
+                onChange={(e) => setStock(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #4F6EF7, #6B84FF)",
+                color: "white",
+                boxShadow: "0 4px 14px rgba(79,110,247,0.3)",
+              }}
+            >
+              {title}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function LcdFormModal({
+  title,
+  initial,
+  hideStock,
+  onSubmit,
+  onClose,
+}: {
+  title: string;
+  initial: { name: string; stock: number };
+  hideStock?: boolean;
+  onSubmit: (name: string, stock: number) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(initial.name);
+  const [stock, setStock] = useState(String(initial.stock));
+  const ease2 = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onSubmit(name.trim(), parseInt(stock) || 0);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.2, ease: ease2 }}
+        className="w-full max-w-sm rounded-2xl p-6"
+        style={{
+          background: "#0D1225",
+          border: "1px solid rgba(79,110,247,0.25)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Monitor className="w-5 h-5" style={{ color: "#4F6EF7" }} />
+            <h2 className="text-white font-bold text-lg">{title}</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              LCD Type Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. iPhone 13 LCD, Samsung S21 AMOLED"
+              autoFocus
+              className="w-full px-4 py-3 rounded-xl text-sm text-white focus:outline-none placeholder:text-slate-600"
+              style={inputStyle}
+            />
+          </div>
+
+          {!hideStock && (
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
                 Initial Stock
